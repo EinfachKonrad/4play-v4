@@ -13,6 +13,8 @@ export default interface CrewMember {
     phone?: string;
 
     roleUuid: string;   // role uuid (r-xxx) of the crew member, used for determining the permissions of the crew member in the system
+    passwordHash?: string;   // hashed password for authentication
+    mustChangePassword?: boolean;   // if true, the crew member must change their password on next login
 
     defaultDayRate?: number;   // only for external crew members, the day rate of the crew member.
 
