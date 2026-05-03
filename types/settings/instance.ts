@@ -13,6 +13,7 @@ export default interface Instance {
 
     design: {
         logoUrl?: string; // URL to the instance logo (optional)
+        faviconUrl?: string; // URL to the instance favicon (optional)
         primaryColor: string | "#374151"; // Primary color for the instance (e.g., "#FF5733")
         secondaryColor: string | "#1F2937"; // Secondary color for the instance (e.g., "#C70039")
         backgroundColor: string | "#000000"; // Background color for the instance (e.g., "#F0F0F0")

@@ -54,12 +54,14 @@ if (!mongoUri) {
   throw new Error("V4_URI fehlt. Bitte in .env.local setzen.")
 }
 
-const email = process.argv[2]?.trim().toLowerCase()
-const password = process.argv[3]
-const role = process.argv[4]?.toLowerCase() || "crew" // "crew" or role uuid"
+const type = process.argv[2]?.trim().toLowerCase() || "internal" // "internal" or "external"
+const email = process.argv[3]?.trim().toLowerCase()
+const password = process.argv[4]
+const role = process.argv[5]?.toLowerCase() || "crew" // "crew" or role uuid"
 
-if (!email || !password) {
-  console.log("Usage: node scripts/create-user.mjs <email> <password> [roleuuid]")
+if (!type || !email || !password) {
+  console.log("Usage: node scripts/create-user.mjs <type> <email> <password> [roleuuid]")
+  console.log("Example: node scripts/create-user.mjs internal test@example-com Passw0rd crew")
   process.exit(1)
 }
 
@@ -83,6 +85,7 @@ try {
     {
       $set: {
         uuid: uuidv4(),
+        type,
         firstName: encryptData("auto-generated"),
         lastName: encryptData("lastname"),
         email: encryptData(email),

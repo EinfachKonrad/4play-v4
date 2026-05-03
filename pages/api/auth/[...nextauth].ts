@@ -6,7 +6,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { NextRequest } from "next/server.js"
 
 import clientPromise from "../../../lib/mongodb"
-import { decryptData, encryptData } from "../../../hooks/useEncryprion"
+import { decryptData, encryptData } from "../../../lib/encryprion"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
@@ -120,15 +120,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           session.user.mustChangePassword = false
         }
         
-        console.log('[NextAuth Session] Session updated:', {
-          email: session.user.email,
-          type: session.user.type,
-          firstName: session.user.firstName,
-          lastName: session.user.lastName,
-          uuid: session.user.uuid,
-          roleUuid: session.user.roleUuid,
-          mustChangePassword: session.user.mustChangePassword
-        })
+        if (process.env.DEV_INSTANCE === "true") {
+          console.log('[NextAuth Session] Session updated:', {
+            email: session.user.email,
+            type: session.user.type,
+            firstName: session.user.firstName,
+            lastName: session.user.lastName,
+            uuid: session.user.uuid,
+            roleUuid: session.user.roleUuid,
+            mustChangePassword: session.user.mustChangePassword
+          })
+        }
       }
       return session
     },

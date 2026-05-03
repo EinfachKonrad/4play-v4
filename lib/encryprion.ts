@@ -1,4 +1,3 @@
-// encryption.js
 /* eslint-disable @typescript-eslint/no-var-requires */
 const method = 'aes-256-cbc'
 
