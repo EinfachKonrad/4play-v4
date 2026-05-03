@@ -3,8 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { MongoDBAdapter } from "@auth/mongodb-adapter"
 import { compare } from "bcryptjs"
 import type { NextApiRequest, NextApiResponse } from "next"
+import { NextRequest } from "next/server.js"
 
 import clientPromise from "../../../lib/mongodb"
+import { decryptData, encryptData } from "../../../hooks/useEncryprion"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
@@ -31,7 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const userPromise = client
           .db("settings")
           .collection("crewmembers")
-          .findOne({ email })
+          .findOne({ email: encryptData(email) })
 
         const [user] = await Promise.all([
           userPromise,
@@ -57,11 +59,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return {
           id: user._id.toString(),
           email,
-          type: user.type,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          uuid: user.uuid,
-          roleUuid: user.roleUuid || "crew",
+          type: typeof user.type === "string" ? decryptData(user.type) : user.type,
+          firstName: typeof user.firstName === "string" ? decryptData(user.firstName) : user.firstName,
+          lastName: typeof user.lastName === "string" ? decryptData(user.lastName) : user.lastName,
+          uuid: typeof user.uuid === "string" ? decryptData(user.uuid) : user.uuid,
+          roleUuid: typeof user.roleUuid === "string" ? decryptData(user.roleUuid) : "crew",
           mustChangePassword: user.mustChangePassword || false,
         }
       },
@@ -102,11 +104,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (typeof token.uuid === "string" && token.uuid.length > 0) {
           try {
             const client = await clientPromise
-            const user = await client.db("settings").collection("crewmembers").findOne({ uuid: token.uuid })
+            const user = await client.db("settings").collection("crewmembers").findOne({ uuid: encryptData(token.uuid) })
             
             if (user) {
               session.user.mustChangePassword = user.mustChangePassword || false
-              console.log('[NextAuth Session] Fetched mustChangePassword from DB:', user.mustChangePassword)
             } else {
               session.user.mustChangePassword = false
             }
@@ -161,7 +162,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   const rawBody = Buffer.concat(chunks)
 
-  const request = new Request(url.toString(), {
+  const request = new NextRequest(url.toString(), {
     method: req.method,
     headers: webHeaders,
     body: rawBody.length > 0 ? rawBody : undefined,

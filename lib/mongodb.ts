@@ -5,20 +5,19 @@ if (!process.env.V4_URI) {
 }
 
 const uri = process.env.V4_URI;
-const options = {};
 
 let client;
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
-  if (!(global as any)._mongoClientPromise_v4) {
-    client = new MongoClient(uri, options);
-    (global as any)._mongoClientPromise_v4 = client.connect();
+  if (!(global as any)._mongoClient_v4) {
+    client = new MongoClient(uri);
+    (global as any)._mongoClient_v4 = client;
   }
-  clientPromise = (global as any)._mongoClientPromise_v4;
+  clientPromise = Promise.resolve((global as any)._mongoClient_v4 as MongoClient);
 } else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  client = new MongoClient(uri);
+  clientPromise = Promise.resolve(client);
 }
 
 export default clientPromise;

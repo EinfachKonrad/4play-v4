@@ -52,10 +52,26 @@ export function encryptData(data: string) {
 
 export function decryptData(encryptedData: string) {
   const { crypto, key, encryptionIV } = getKeys()
+  // Backward-compatible: some legacy records are plain text, not encrypted.
+  // Only decrypt strings that look like base64-encoded hex payloads.
+  const isBase64 = /^[A-Za-z0-9+/]+={0,2}$/.test(encryptedData) && encryptedData.length % 4 === 0
+  if (!isBase64) {
+    return encryptedData
+  }
+
   const buff = Buffer.from(encryptedData, 'base64')
-  const decipher = crypto.createDecipheriv(method, key, encryptionIV)
-  return (
-    decipher.update(buff.toString('utf8'), 'hex', 'utf8') +
-    decipher.final('utf8')
-  )
+  const hexPayload = buff.toString('utf8')
+  const isHex = /^[0-9a-fA-F]+$/.test(hexPayload) && hexPayload.length % 2 === 0
+
+  if (!isHex) {
+    return encryptedData
+  }
+
+  try {
+    const decipher = crypto.createDecipheriv(method, key, encryptionIV)
+    return decipher.update(hexPayload, 'hex', 'utf8') + decipher.final('utf8')
+  } catch {
+    // If decryption fails, preserve the original value instead of crashing auth.
+    return encryptedData
+  }
 }
