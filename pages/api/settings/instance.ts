@@ -2,6 +2,11 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import Instance from "@/types/settings/instance";
 
+// GET /api/settings/instance
+// --> 200: { name, defaultLocale, support, design }
+// --> 404: { error: "Instance configuration not found" }
+// --> 500: { error: "Internal server error" }
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Pick<Instance, "name" | "defaultLocale" | "support" | "design"> | { error: string }>
