@@ -24,3 +24,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+.bg-base {
+  background-color: var(--background);
+}

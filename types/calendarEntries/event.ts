@@ -70,7 +70,7 @@ export default interface Event {
                 uuid: string;   // crew member uuid (u-xxx)
                 dates: Array<{
                     dateUuid: string;   // date uuid (d-xxx) of the crew member's involvement in the project
-                    positionUuid: string;    // crew member position uuid (p-xxx)
+                    positionUuid?: string;    // crew member position uuid (p-xxx)
                 }>
             }>;
         }
