@@ -72,7 +72,7 @@ function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                 />
-                <button type="submit" className='bg-blue-500 text-white p-2 rounded' disabled={loading}>
+                <button type="submit" className='text-sm rounded-md border border-gray-800 p-1 cursor-pointer transition-all duration-200 hover:bg-gray-700' disabled={loading}>
                     {loading ? 'Lädt...' : 'Login'}
                 </button>
                 {error && <p className='text-red-500'>{error}</p>}

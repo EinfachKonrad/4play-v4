@@ -19,7 +19,7 @@ export default function Calendar() {
       </div>
       <div className="grid grid-cols-7 gap-px">
         {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day, i) => (
-          <div key={i} className="text-sm text-center py-2 text-white font-semibold">{day}</div>
+          <div key={i} className="text-sm text-center py-2 text-white font-semibold border-x border-b border-gray-900">{day}</div>
         ))}
 
         {days.map((day, i) => (

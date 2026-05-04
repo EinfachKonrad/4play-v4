@@ -1,4 +1,4 @@
-import PageTitle from '@/components/ui/PageTitle'
+import PageTitle from '@/components/utility/PageTitle'
 import { UsersRound } from 'lucide-react'
 import React from 'react'
 

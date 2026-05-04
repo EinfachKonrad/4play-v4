@@ -2,7 +2,7 @@
 
 import useInstanceConfig from '@/hooks/useInstanceConfig'
 import type { LucideIcon } from 'lucide-react'
-import { Award, Book, BookUser, Building2, Calendar, ChevronDown, ChevronRight, ClipboardType, Home, Package, PowerCircle, Settings, ShieldUser, SquareUser, User, Users, UsersRound, Warehouse } from 'lucide-react'
+import { Award, Book, BookUser, Building2, Calendar, ChevronDown, ChevronRight, ClipboardType, Home, Package, PowerCircle, Scroll, Settings, ShieldUser, SquareUser, User, Users, UsersRound, Warehouse } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -28,8 +28,10 @@ const navigationItems: NavigationItem[] = [
         { name: 'Kunden', href: '/contacts/clients', icon: BookUser, requiredPermission: 'viewClients' },
     ] },
     { name: 'Einstellungen', href: '/settings', icon: Settings, requiredPermission: 'viewSettings', children: [
-        { name: 'Brandings', href: '/settings/brandings', icon: Building2, requiredPermission: 'viewBrandings' },
-        { name: 'Textbausteine', href: '/settings/textblocks', icon: ClipboardType, requiredPermission: 'viewTextblocks' },
+        { name: 'Brandings', href: '/settings/brandings', icon: Building2, requiredPermission: 'viewBrandings', children: [
+            { name: 'Briefpapier', href: '/settings/brandings/stationery', icon: Scroll, requiredPermission: 'viewStationery' },
+            { name: 'Textbausteine', href: '/settings/textblocks', icon: ClipboardType, requiredPermission: 'viewTextblocks' },
+        ] },
         { name: 'Standorte', href: '/settings/warehouses', icon: Warehouse, requiredPermission: 'viewWarehouses' },
         { name: 'Positionen', href: '/settings/positions', icon: Award, requiredPermission: 'viewPositions' },
         { name: 'Crew', href: '/settings/crew', icon: Users, requiredPermission: 'viewCrew' },
