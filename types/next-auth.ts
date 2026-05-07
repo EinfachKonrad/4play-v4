@@ -11,6 +11,7 @@ declare module "next-auth" {
     uuid?: string
     roleUuid?: string
     mustChangePassword?: boolean
+    permissions?: string[]
   }
 
   interface Session {
@@ -21,6 +22,7 @@ declare module "next-auth" {
       uuid?: string
       roleUuid?: string
       mustChangePassword?: boolean
+      permissions?: string[]
     } & DefaultSession["user"]
   }
 }
@@ -33,5 +35,6 @@ declare module "next-auth/jwt" {
     uuid?: string
     roleUuid?: string
     mustChangePassword?: boolean
+    permissions?: string[]
   }
 }

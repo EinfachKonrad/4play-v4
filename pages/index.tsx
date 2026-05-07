@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
+import ProtectedPage from "@/components/utility/ProtectedPage";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,6 +14,7 @@ const geistMono = Geist_Mono({
 
 export default function Home() {
   return (
+    <ProtectedPage permission="viewDashboard" pageTitle="Dashboard">
     <div
       className={`flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
     >
@@ -74,5 +76,6 @@ export default function Home() {
         </div>
       </main>
     </div>
+    </ProtectedPage>
   );
 }

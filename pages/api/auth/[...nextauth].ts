@@ -7,6 +7,7 @@ import { NextRequest } from "next/server.js"
 
 import clientPromise from "../../../lib/mongodb"
 import { decryptData, encryptData } from "../../../lib/encryprion"
+import type Role from "../../../types/settings/crew/role"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
@@ -79,13 +80,47 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.uuid = user.uuid
         token.roleUuid = user.roleUuid
         token.mustChangePassword = user.mustChangePassword
+
+        // Fetch and embed permissions at login time so no API route is needed later
+        if (typeof user.uuid === "string" && user.uuid.length > 0) {
+          try {
+            const client = await clientPromise
+            const db = client.db("settings")
+            // user.roleUuid is already decrypted (from authorize); additional roles in the DB are encrypted
+            const dbUser = await db.collection("crewmembers").findOne({ uuid: encryptData(user.uuid) })
+            const extraRoles: string[] = dbUser && Array.isArray(dbUser.roles)
+              ? dbUser.roles
+                  .filter((r: unknown): r is string => typeof r === "string" && r.length > 0)
+                  .map((r: string) => { try { return decryptData(r) } catch { return r } })
+              : []
+            const roleIds = [
+              typeof user.roleUuid === "string" && user.roleUuid.length > 0 ? user.roleUuid : null,
+              ...extraRoles,
+            ].filter((id): id is string => id !== null)
+            if (roleIds.length > 0) {
+              const roles = await db.collection<Role>("roles").find({ uuid: { $in: roleIds } }).toArray()
+              const perms = new Set<string>()
+              roles.forEach(role => role.permissions.forEach(p => perms.add(p)))
+              token.permissions = Array.from(perms)
+            } else {
+              token.permissions = []
+            }
+          } catch (error) {
+            console.error("[NextAuth JWT] Failed to fetch permissions:", error)
+            token.permissions = []
+          }
+        } else {
+          token.permissions = []
+        }
+
         console.log('[NextAuth JWT] Token updated:', {
           type: token.type,
           firstName: token.firstName,
           lastName: token.lastName,
           uuid: token.uuid,
           roleUuid: token.roleUuid,
-          mustChangePassword: token.mustChangePassword
+          mustChangePassword: token.mustChangePassword,
+          permissions: token.permissions
         })
       }
       return token
@@ -99,6 +134,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.uuid = token.uuid
         session.user.roleUuid = token.roleUuid
         session.user.mustChangePassword = token.mustChangePassword ?? false
+        session.user.permissions = token.permissions ?? []
         // Always fetch fresh mustChangePassword value from DB to ensure it's up-to-date
         // This is important after password changes
         if (typeof token.uuid === "string" && token.uuid.length > 0) {
@@ -128,7 +164,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             lastName: session.user.lastName,
             uuid: session.user.uuid,
             roleUuid: session.user.roleUuid,
-            mustChangePassword: session.user.mustChangePassword
+            mustChangePassword: session.user.mustChangePassword,
+            permissions: session.user.permissions
           })
         }
       }

@@ -2,6 +2,7 @@ import { addDays, addMonths, format, isSameDay, isSameMonth, startOfMonth, start
 import { de } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React, { useState } from 'react'
+import Button from './Button'
 
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -10,12 +11,12 @@ export default function Calendar() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <button className='my-auto cursor-pointer rounded-md border border-gray-800 p-1 transition-all duration-200 hover:bg-gray-700'><ChevronLeft className='h-6 w-6' onClick={() => setCurrentMonth((prev => addMonths(prev, -1)))} /></button>
+        <Button onClick={() => setCurrentMonth((prev => addMonths(prev, -1)))}><ChevronLeft className='h-6 w-6' /></Button>
         <div className="flex items-center gap-4">
           <section className="text-lg font-semibold">{format(currentMonth, 'MMMM yyyy', { locale: de })}</section>
-          <button className={`text-sm rounded-md border border-gray-800 p-1 cursor-pointer transition-all duration-200 hover:bg-gray-700 ${isSameMonth(currentMonth, new Date()) ? 'bg-gray-600' : ''}`} onClick={() => setCurrentMonth(new Date())}>Heute</button>
+          <Button className={` ${isSameMonth(currentMonth, new Date()) ? 'bg-gray-600' : ''}`} onClick={() => setCurrentMonth(new Date())}>Heute</Button>
         </div>
-        <button className='my-auto cursor-pointer rounded-md border border-gray-800 p-1 transition-all duration-200 hover:bg-gray-700'><ChevronRight className='h-6 w-6' onClick={() => setCurrentMonth((prev => addMonths(prev, 1)))} /></button>
+        <Button onClick={() => setCurrentMonth((prev => addMonths(prev, 1)))}><ChevronRight className='h-6 w-6' /></Button>
       </div>
       <div className="grid grid-cols-7 gap-px">
         {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day, i) => (

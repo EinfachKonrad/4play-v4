@@ -1,3 +1,5 @@
+// UNPROTECTED ENDPOINT - NO AUTHENTICATION REQUIRED
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import Instance from "@/types/settings/instance";
