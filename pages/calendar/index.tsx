@@ -3,13 +3,10 @@ import { Calendar, CalendarRange, Plus, Table } from 'lucide-react'
 import CalendarComponent from '@/components/ui/Calendar'
 import React from 'react'
 import Navbar from '@/components/ui/Navbar'
-import useInstanceConfig from '@/hooks/useInstanceConfig'
-import Head from 'next/head'
 import { ProtectedPage } from '@/components/utility/ProtectedPage'
 
 function CalendarPage() {
   const [view, setView] = React.useState<'calendar' | 'list'>('calendar')
-  const instanceConfig = useInstanceConfig()
   return (
     <ProtectedPage permission="viewCalendar" pageTitle="Kalender">
       <div>

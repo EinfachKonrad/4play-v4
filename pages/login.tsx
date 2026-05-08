@@ -60,7 +60,7 @@ function LoginPage() {
     <Head>
         <title>Login &bull; {instanceConfig?.name ?? "4play"}</title>
     </Head>
-        <div className='m-auto text-center h-screen flex flex-col items-center justify-center'>
+        <div className='m-auto text-center h-full flex flex-col items-center justify-center'>
           <h1 className='text-3xl font-bold mb-2'>{instanceConfig?.name ?? "4play"}</h1>
             <h2 className='text-2xl font-bold'>Login</h2>
             <form className='flex flex-col gap-4 mt-4' onSubmit={handleSubmit}>
