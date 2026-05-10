@@ -1,21 +1,25 @@
-// UNPROTECTED ENDPOINT - NO AUTHENTICATION REQUIRED
+// PUBLIC ENDPOINT - AUTH OPTIONAL
 
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
 import Instance from "@/types/settings/instance";
+import {
+  ApiRequest,
+  NotFoundError,
+  requireMethod,
+  withApiV2,
+} from "@/lib/middleware";
 
 // GET /api/settings/instance
 // --> 200: { name, defaultLocale, support, design }
 // --> 404: { error: "Instance configuration not found" }
 // --> 500: { error: "Internal server error" }
 
-export default async function handler(
-  req: NextApiRequest,
+async function handler(
+  req: ApiRequest,
   res: NextApiResponse<Pick<Instance, "name" | "defaultLocale" | "support" | "design"> | { error: string }>
 ) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  requireMethod(req, res, ["GET"]);
 
   try {
     const client = await clientPromise;
@@ -25,12 +29,16 @@ export default async function handler(
       .findOne({ active: true }, { projection: { name: 1, defaultLocale: 1, support: 1, design: 1, _id: 0 } });
 
     if (!instance) {
-      return res.status(404).json({ error: "Instance configuration not found" });
+      throw new NotFoundError("Instance configuration not found");
     }
 
     return res.status(200).json(instance);
   } catch (error) {
     console.error("Failed to fetch instance config:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    throw error;
   }
 }
+
+export default withApiV2(handler, {
+  optionalAuth: true,
+});

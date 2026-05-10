@@ -5,7 +5,7 @@ import React from 'react'
 
 function CrewCalendarPage() {
   return (
-    <ProtectedPage permission="viewCrewCalendar" pageTitle="Dispo-Ansicht">
+    <ProtectedPage permission="accessCrewCalendar" pageTitle="Dispo-Ansicht">
       <PageTitle title="Dispo-Ansicht" icon={UsersRound} />
     </ProtectedPage>
   )

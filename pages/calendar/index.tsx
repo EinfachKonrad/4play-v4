@@ -8,7 +8,7 @@ import { ProtectedPage } from '@/components/utility/ProtectedPage'
 function CalendarPage() {
   const [view, setView] = React.useState<'calendar' | 'list'>('calendar')
   return (
-    <ProtectedPage permission="viewCalendar" pageTitle="Kalender">
+    <ProtectedPage permission="accessCalendar" pageTitle="Kalender">
       <div>
         <div className="flex items-center justify-between mb-4">
           <PageTitle title="Kalender" icon={Calendar} />

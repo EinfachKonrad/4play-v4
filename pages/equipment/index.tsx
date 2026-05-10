@@ -10,19 +10,20 @@ function EquipmentPage() {
   const [view, setView] = useState<'intern' | 'extern'>('intern')
 
   return (
-    <ProtectedPage permission="viewEquipment" pageTitle="Equipment">
+    <ProtectedPage permission="accessEquipment" pageTitle="Equipment">
       <div>
         <div className="flex items-center justify-between mb-4">
           <PageTitle title="Equipment" icon={Package} />
           <Navbar items={[
             { id: 'intern', name: 'Intern', onClick: () => setView('intern'), icon: Box},
-            { id: 'extern', name: 'Extern', onClick: () => setView('extern'), icon: Folders},
+            { id: 'extern', name: 'Extern', onClick: () => setView('extern'), icon: Folders, requiredPermission: 'viewExternalEquipment'},
           ]} activeItemId={view} />
         </div>
         <div>
           <FolderStructure items={[
-            { uuid: '1', path: '/folder1/itemA/', name: 'Item A', icon: Box },
-            { uuid: '2', path: '/folder2/', name: 'Bundle B', icon: Package }
+            { uuid: '1', path: 'folder1/itemA/', name: 'Item A', icon: Box },
+            { uuid: '2', path: 'folder2/', name: 'Bundle B', icon: Package },
+            { uuid: '3', path: '/', name: 'Item C', icon: Box },
           ]} />
         </div>
       </div>
