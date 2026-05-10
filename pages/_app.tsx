@@ -18,7 +18,12 @@ function AppContent({ Component, pageProps }: { Component: AppProps["Component"]
     if (status === "unauthenticated" && router.pathname !== "/login") {
       router.push("/login");
     }
-  }, [status, router.pathname]);
+    
+    // Redirect to password change if mustChangePassword is true
+    if (status === "authenticated" && session?.user?.mustChangePassword && router.pathname !== "/onboarding/password") {
+      router.push("/onboarding/password");
+    }
+  }, [status, router.pathname, session]);
 
   if (status === "loading") {
     return (

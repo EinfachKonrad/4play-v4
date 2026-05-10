@@ -9,6 +9,10 @@ import clientPromise from "../../../lib/mongodb"
 import { decryptData, encryptData } from "../../../lib/encryprion"
 import type Role from "../../../types/settings/crew/role"
 
+function parseMustChangePassword(value: unknown): boolean {
+  return value === true || value === "true"
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
   session: {
@@ -128,31 +132,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       // Add UUID, role, and mustChangePassword to session
       if (session?.user) {
+        const tokenMustChangePassword = parseMustChangePassword((token as { mustChangePassword?: unknown }).mustChangePassword)
         session.user.type = token.type
         session.user.firstName = token.firstName
         session.user.lastName = token.lastName
         session.user.uuid = token.uuid
-        session.user.mustChangePassword = token.mustChangePassword ?? false
+        session.user.mustChangePassword = tokenMustChangePassword
         session.user.permissions = token.permissions ?? []
         // Always fetch fresh mustChangePassword value from DB to ensure it's up-to-date
         // This is important after password changes
         if (typeof token.uuid === "string" && token.uuid.length > 0) {
           try {
             const client = await clientPromise
-            const user = await client.db("settings").collection("crewmembers").findOne({ uuid: encryptData(token.uuid) })
+            const db = client.db("settings")
+            const encryptedUuid = encryptData(token.uuid)
+            let user = await db.collection("crewmembers").findOne({ uuid: encryptedUuid })
+
+            // Backward-compatible fallback for legacy rows where uuid is not encrypted.
+            if (!user) {
+              user = await db.collection("crewmembers").findOne({ uuid: token.uuid })
+            }
             
             if (user) {
-              session.user.mustChangePassword = user.mustChangePassword || false
-            } else {
-              session.user.mustChangePassword = false
+              session.user.mustChangePassword = parseMustChangePassword(user.mustChangePassword)
             }
           } catch (error: unknown) {
             // eslint-disable-next-line no-console
             ;(console.error as any)('[NextAuth Session] Error fetching mustChangePassword:', error)
-            session.user.mustChangePassword = false
+            session.user.mustChangePassword = tokenMustChangePassword
           }
-        } else {
-          session.user.mustChangePassword = false
         }
         
         if (process.env.DEV_INSTANCE === "true") {

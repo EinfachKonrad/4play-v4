@@ -17,8 +17,12 @@ function profilePage() {
     const { data: session } = useSession()
     const instanceConfig = useInstanceConfig();
     const [showMessage, setShowMessage] = useState(false)
+    const [showPasswordChangeMessage, setShowPasswordChangeMessage] = useState(false)
     const router = useRouter()
     const [loading, setLoading] = useState(true)
+    const [currentPassword, setCurrentPassword] = useState('')
+    const [newPassword, setNewPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
 
     async function fetchUser() {
         try {
@@ -60,7 +64,37 @@ function profilePage() {
 
         setShowMessage(true)
     }
+
+    const onPasswordChangeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (newPassword !== confirmPassword) {
+            alert('Die neuen Passwörter stimmen nicht überein.')
+            return
+        }
+
+        try {
+            const res = await fetch('/api/settings/crew/crewmember/password?uuid=' + session?.user?.uuid, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword,
+                }),
+            })
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(`Error changing password: ${errorData.error || res.statusText}`)
+            }
+            setShowPasswordChangeMessage(true)
+        } catch (error) {
+            console.error('Failed to change password:', error)
+        }
+    }
     
+
 
   return (
     <>
@@ -147,6 +181,15 @@ function profilePage() {
                 </div>
                 <Button className="text-base" type="submit">Änderungen speichern</Button>
             </form>
+            <div className='mt-4'>
+                <p className='font-bold mb-2'>Passwort ändern</p>
+                <form onSubmit={onPasswordChangeSubmit} className='flex gap-2'>
+                    <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder='Aktuelles Passwort'/>
+                    <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder='Neues Passwort'/>
+                    <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder='Neues Passwort wiederholen'/>
+                    <Button type="submit">Passwort ändern</Button>
+                </form>
+            </div>
         </div>
         {showMessage && (
             <MessageBox
@@ -167,6 +210,23 @@ function profilePage() {
                         onClick: () => {
                             setShowMessage(false);
                             signOut()
+                        },
+                    }
+                ]}
+            />
+        )}
+
+        {showPasswordChangeMessage && (
+            <MessageBox
+                title="Passwort geändert"
+                description="Dein Passwort wurde erfolgreich geändert. Bitte melde dich erneut an."
+                options={[
+                    {
+                        label: 'OK',
+                        type: 'primary',
+                        onClick: () => {
+                            setShowPasswordChangeMessage(false);
+                            signOut();
                         },
                     }
                 ]}
