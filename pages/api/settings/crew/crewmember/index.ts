@@ -143,7 +143,7 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
         }
 
         if (isOwnProfile && Object.prototype.hasOwnProperty.call(updates, 'roleUuid')) {
-            throw new BadRequestError('Cannot update your own roleUuid')
+            delete updates.roleUuid; // Remove roleUuid for self-updates
         }
 
         const clientUpdates = { ...(updates as Record<string, unknown>) }

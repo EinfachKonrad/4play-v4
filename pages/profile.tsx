@@ -1,10 +1,11 @@
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import LoadingText from '@/components/ui/LoadingText'
 import MessageBox from '@/components/ui/MessageBox'
 import PageTitle from '@/components/utility/PageTitle'
 import useInstanceConfig from '@/hooks/useInstanceConfig'
 import CrewMember from '@/types/settings/crew/crewMember'
-import { Calendar1, LetterText, Mail, Phone, UserRound } from 'lucide-react'
+import { Calendar1, LetterText, Mail, Phone, User, UserRound } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -17,6 +18,7 @@ function profilePage() {
     const instanceConfig = useInstanceConfig();
     const [showMessage, setShowMessage] = useState(false)
     const router = useRouter()
+    const [loading, setLoading] = useState(true)
 
     async function fetchUser() {
         try {
@@ -33,7 +35,7 @@ function profilePage() {
 
     useEffect(() => {
         if (session?.user?.uuid) {
-            fetchUser()
+            fetchUser().finally(() => setLoading(false))
         }
     }, [session?.user?.uuid])
 
@@ -68,23 +70,44 @@ function profilePage() {
         <PageTitle title="Profil" icon={UserRound} />
         <div>
             <form className='grid grid-cols-4 gap-4' onSubmit={onSubmit}>
-                <p className='col-span-4 font-bold ml-2 relative top-4'>Persönliche Informationen</p>
+                <p className='col-span-4 font-bold relative top-4'>Persönliche Informationen</p>
                 <div className='col-span-3 flex gap-4'>
-                    <label htmlFor="firstName" className='relative top-2'><UserRound className='relative top-1 w-5 h-5' /></label>
-                    <Input required value={user.firstName ?? ''} onChange={(e) => setUser({ ...user, firstName: e.target.value })} placeholder='Vorname' />
-                    <Input required value={user.lastName ?? ''} onChange={(e) => setUser({ ...user, lastName: e.target.value })} id="lastName" placeholder='Nachname' />
+                    <label htmlFor="firstName" className='relative top-2'><User className='relative top-1 w-5 h-5' /></label>
+                    <div className='flex gap-0.5 w-full'>
+                        {loading ? (
+                        <LoadingText />
+                    ) : (
+                        <Input required value={user.firstName ?? ''} onChange={(e) => setUser({ ...user, firstName: e.target.value })} placeholder='Bernd' />
+                    )}
+                    {loading ? (
+                        <LoadingText />
+                    ) : (
+                        <Input required value={user.lastName ?? ''} onChange={(e) => setUser({ ...user, lastName: e.target.value })} id="lastName" placeholder='Beispiel' />
+                    )}
+                    </div>
                 </div>
                 <div className='col-span-1 flex gap-4'>
                     <label htmlFor="dateOfBirth" className='relative top-2'><Calendar1 className='relative top-1 w-5 h-5' /></label>
+                                    {loading ? (
+                    <LoadingText />
+                ) : (
                     <Input required value={user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : ''} onChange={(e) => setUser({ ...user, dateOfBirth: e.target.value ? new Date(e.target.value).toISOString() as any : undefined })} id="dateOfBirth" type="date" placeholder='Geburtsdatum' />
-                </div>
-                <p className='col-span-4 font-bold ml-2 mt-2 relative top-4'>Kontaktdaten</p>
+                                )}
+                    </div>
+                <p className='col-span-4 font-bold mt-2 relative top-4'>Kontaktdaten</p>
                 <div className='col-span-2 flex gap-4'>
                     <label htmlFor="email" className='relative top-2'><Mail className='relative top-1 w-5 h-5' /></label>
-                    <Input value={user.email ?? ''} onChange={(e) => setUser({ ...user, email: e.target.value })} id="email" placeholder='E-Mail' />
+                    {loading ? (
+                        <LoadingText />
+                    ) : (
+                        <Input value={user.email ?? ''} onChange={(e) => setUser({ ...user, email: e.target.value })} id="email" placeholder='E-Mail' />
+                    )}
                 </div>
                 <div className='col-span-2 flex gap-8'>
                     <label htmlFor="phoneAreaCode" className='relative top-2'><Phone className='relative top-1 w-5 h-5' /></label>
+                    {loading ? (
+                        <LoadingText />
+                    ) : (
                     <div className='flex'>
                         <p className='relative top-2'>+</p>
                         <Input 
@@ -120,6 +143,7 @@ function profilePage() {
                             className="max-w-28!"
                         />
                     </div>
+                    )}
                 </div>
                 <Button className="text-base" type="submit">Änderungen speichern</Button>
             </form>
