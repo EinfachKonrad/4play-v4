@@ -7,7 +7,7 @@ import {
     BadRequestError,
     NotFoundError,
     requireMethod,
-    withApiV2,
+    withApi,
     getUuidFromQuery,
 } from '@/lib/middleware'
 
@@ -74,7 +74,7 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     }
 }
 
-export default withApiV2(handler, {
+export default withApi(handler, {
     requiredPermissions: ['useLexwareIntegration', 'accessCompanySettings'],
     allowWildcardPermission: true,
 })

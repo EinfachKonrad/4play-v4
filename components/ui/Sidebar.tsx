@@ -1,6 +1,7 @@
 'use client'
 
 import useInstanceConfig from '@/hooks/useInstanceConfig'
+import { usePermissions } from '@/hooks/usePermission'
 import type { LucideIcon } from 'lucide-react'
 import { Award, Book, BookUser, Building2, Calendar, ChevronDown, ChevronRight, ClipboardType, Home, Package, PowerCircle, Scroll, Settings, ShieldUser, SquareUser, User, Users, UsersRound, Warehouse } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
@@ -19,49 +20,52 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
     { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Kalender', href: '/calendar', icon: Calendar, children: [
-        { name: 'Dispo-Ansicht', href: '/calendar/crew', icon: UsersRound, requiredPermission: 'viewCrewCalendar' },
+    { name: 'Kalender', href: '/calendar', icon: Calendar, requiredPermission: 'accessCalendar', children: [
+        { name: 'Dispo-Ansicht', href: '/calendar/crew', icon: UsersRound, requiredPermission: 'accessCrewCalendar' },
     ] },
-    { name: 'Equipment', href: '/equipment', icon: Package, requiredPermission: 'viewEquipment' },
-    { name: 'Kontakte', href: '/contacts', icon: Book, requiredPermission: 'viewContacts', children: [
-        { name: 'Dienstleister', href: '/contacts/suppliers', icon: Building2, requiredPermission: 'viewSuppliers' },
-        { name: 'Kunden', href: '/contacts/clients', icon: BookUser, requiredPermission: 'viewClients' },
+    { name: 'Equipment', href: '/equipment', icon: Package, requiredPermission: 'accessEquipment' },
+    { name: 'Kontakte', href: '/contacts', icon: Book, requiredPermission: 'accessContacts', children: [
+        { name: 'Dienstleister', href: '/contacts/suppliers', icon: Building2, requiredPermission: 'accessSuppliers' },
+        { name: 'Kunden', href: '/contacts/clients', icon: BookUser, requiredPermission: 'accessClients' },
     ] },
-    { name: 'Einstellungen', href: '/settings', icon: Settings, requiredPermission: 'viewSettings', children: [
-        { name: 'Brandings', href: '/settings/brandings', icon: Building2, requiredPermission: 'viewBrandings', children: [
-            { name: 'Briefpapier', href: '/settings/brandings/stationery', icon: Scroll, requiredPermission: 'viewStationery' },
-            { name: 'Textbausteine', href: '/settings/textblocks', icon: ClipboardType, requiredPermission: 'viewTextblocks' },
+    { name: 'Einstellungen', href: '/settings', icon: Settings, requiredPermission: 'accessSettings', children: [
+        { name: 'Brandings', href: '/settings/brandings', icon: Building2, requiredPermission: 'accessBrandings', children: [
+            { name: 'Briefpapier', href: '/settings/brandings/stationery', icon: Scroll, requiredPermission: 'accessStationery' },
+            { name: 'Textbausteine', href: '/settings/textblocks', icon: ClipboardType, requiredPermission: 'accessTextblocks' },
         ] },
-        { name: 'Standorte', href: '/settings/warehouses', icon: Warehouse, requiredPermission: 'viewWarehouses' },
-        { name: 'Positionen', href: '/settings/positions', icon: Award, requiredPermission: 'viewPositions' },
-        { name: 'Crew', href: '/settings/crew', icon: Users, requiredPermission: 'viewCrew' },
-        { name: 'Rollen', href: '/settings/roles', icon: ShieldUser, requiredPermission: 'viewRoles' },
+        { name: 'Standorte', href: '/settings/warehouses', icon: Warehouse, requiredPermission: 'accessWarehouses' },
+        { name: 'Positionen', href: '/settings/positions', icon: Award, requiredPermission: 'accessPositions' },
+        { name: 'Crew', href: '/settings/crew', icon: Users, requiredPermission: 'accessCrew' },
+        { name: 'Rollen', href: '/settings/roles', icon: ShieldUser, requiredPermission: 'accessRoles' },
     ] },
 ]
 
 function Item({ item, extendSidebar }: { item: NavigationItem; extendSidebar: boolean }) {
     const router = useRouter()
+    const permissions = usePermissions()
 
     return (
         <>
-        <Link
-            href={router.pathname === item.href ? '#' : item.href}
-            className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${router.pathname === item.href || (router.pathname.startsWith(item.href) && item.children != null) ? 'bg-gray-700' : ''}   `}
-        >
-            <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center transition-all duration-200 ${extendSidebar ? '' : 'w-full'}`}> 
-                <item.icon />
-            </span>
-            {extendSidebar ? <span className="truncate">{item.name}</span> : null}
-        </Link>
-        {item.children && (extendSidebar || router.pathname.startsWith(item.href)) ? (
-            <div className="ml-4 mt-1 space-y-1">
-                {item.children.map((child) => (
-                    <Item key={child.name} item={child} extendSidebar={extendSidebar} />
-                ))}
-            </div>
-        ) : null}
+            {(!item.requiredPermission || permissions.includes(item.requiredPermission) || permissions.includes("*")) ? (
+                <Link
+                    href={router.pathname === item.href ? '#' : item.href}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${router.pathname === item.href || (router.pathname.startsWith(item.href) && item.children != null) ? 'bg-gray-700' : ''}   `}
+                >
+                    <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center transition-all duration-200 ${extendSidebar ? '' : 'w-full'}`}> 
+                        <item.icon />
+                    </span>
+                    {extendSidebar ? <span className="truncate">{item.name}</span> : null}
+                </Link>
+            ) : null}
+            {item.children && (extendSidebar || router.pathname.startsWith(item.href)) ? (
+                <div className="ml-4 mt-1 space-y-1">
+                    {item.children.map((child) => (
+                        <Item key={child.name} item={child} extendSidebar={extendSidebar} />
+                    ))}
+                </div>
+            ) : null}
         </>
-    )
+    )    
 }
 
 export default function Sidebar() {
@@ -69,7 +73,6 @@ export default function Sidebar() {
     const [extendSidebar, setExtendSidebar] = useState(true)
     const { data: session } = useSession()
     const [extendProfile, setExtendProfile] = useState(false)
-    const [extendCalendar, setExtendCalendar] = useState(false)
 
     return (
         <nav

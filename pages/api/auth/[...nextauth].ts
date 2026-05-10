@@ -132,7 +132,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.firstName = token.firstName
         session.user.lastName = token.lastName
         session.user.uuid = token.uuid
-        session.user.roleUuid = token.roleUuid
         session.user.mustChangePassword = token.mustChangePassword ?? false
         session.user.permissions = token.permissions ?? []
         // Always fetch fresh mustChangePassword value from DB to ensure it's up-to-date
@@ -163,7 +162,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             firstName: session.user.firstName,
             lastName: session.user.lastName,
             uuid: session.user.uuid,
-            roleUuid: session.user.roleUuid,
             mustChangePassword: session.user.mustChangePassword,
             permissions: session.user.permissions
           })

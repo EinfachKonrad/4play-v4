@@ -7,7 +7,7 @@ import {
   ApiRequest,
   NotFoundError,
   requireMethod,
-  withApiV2,
+  withApi,
 } from "@/lib/middleware";
 
 // GET /api/settings/instance
@@ -39,6 +39,6 @@ async function handler(
   }
 }
 
-export default withApiV2(handler, {
+export default withApi(handler, {
   optionalAuth: true,
 });

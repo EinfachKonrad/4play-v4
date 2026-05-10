@@ -10,7 +10,6 @@ export interface ApiRequest extends NextApiRequest {
     uuid: string;
     email: string;
     name?: string;
-    roleUuid: string;
     permissions: string[];
     mustChangePassword: boolean;
   };
@@ -52,6 +51,7 @@ export class ForbiddenError extends Error implements ApiError {
   constructor(message = 'Forbidden: Insufficient permissions', public details?: any) {
     super(message);
     this.name = 'ForbiddenError';
+    this.details = details;
   }
 }
 
@@ -92,8 +92,6 @@ export interface MiddlewareOptions {
   /** How required permissions are checked: all or any */
   permissionMode?: 'all' | 'any';
   /** Optional roleUuid gate in addition to permissions */
-  requiredRoleUuids?: string[];
-  /** If true, '*' in user permissions bypasses permission checks */
   allowWildcardPermission?: boolean;
   /** Whether authentication is optional (for public endpoints) */
   optionalAuth?: boolean;
@@ -127,7 +125,7 @@ function hasRequiredPermissions(
 // ============================================
 
 function handleApiError(error: any, res: NextApiResponse, verbose = false): void {
-  console.error('[API v2 Error]', {
+  console.error('[API Error]', {
     name: error.name,
     message: error.message,
     statusCode: error.statusCode,
@@ -145,7 +143,8 @@ function handleApiError(error: any, res: NextApiResponse, verbose = false): void
     }
   };
 
-  if (error.details) {
+  const isDevInstance = process.env.DEV_INSTANCE === 'true';
+  if (isDevInstance && error.details) {
     response.error.details = error.details;
   }
 
@@ -162,27 +161,26 @@ function handleApiError(error: any, res: NextApiResponse, verbose = false): void
 // ============================================
 
 /**
- * API v2 Middleware with built-in authentication, authorization, and error handling.
+ * API Middleware with built-in authentication, authorization, and error handling.
  * 
  * @example
  * ```typescript
- * export default withApiV2(async (req, res) => {
+ * export default withApi(async (req, res) => {
  *   // req.user ist automatisch verfügbar
  *   return res.json({ message: 'Success', user: req.user });
  * }, { requiredPermissions: ['viewEquipment'] });
  * ```
  */
-export function withApiV2(
+export function withApi(
   handler: ApiHandler,
   options: MiddlewareOptions = {}
 ): (req: NextApiRequest, res: NextApiResponse) => Promise<void> {
   const {
     requiredPermissions = [],
     permissionMode = 'all',
-    requiredRoleUuids = [],
     allowWildcardPermission = true,
     optionalAuth = false,
-    verboseErrors = process.env.NODE_ENV === 'development'
+    verboseErrors = process.env.DEV_INSTANCE === 'true'
   } = options;
 
   return async (req: ApiRequest, res: NextApiResponse) => {
@@ -194,8 +192,6 @@ export function withApiV2(
       }
 
       if (session) {
-        // User-Info aus Session extrahieren
-        const userRoleUuid: string = (session.user as any)?.roleUuid || '';
         const userUuid: string = (session.user as any)?.uuid || '';
         const userPermissions: string[] = Array.isArray((session.user as any)?.permissions)
           ? (session.user as any).permissions.filter((value: unknown): value is string => typeof value === 'string')
@@ -206,17 +202,9 @@ export function withApiV2(
           uuid: userUuid,
           email: session.user?.email || '',
           name: session.user?.name ?? undefined,
-          roleUuid: userRoleUuid,
           permissions: userPermissions,
           mustChangePassword: userMustChangePassword
         };
-
-        if (requiredRoleUuids.length > 0 && !requiredRoleUuids.includes(userRoleUuid)) {
-          throw new ForbiddenError('Insufficient role permissions', {
-            userRoleUuid,
-            requiredRoleUuids
-          });
-        }
 
         if (!hasRequiredPermissions(userPermissions, requiredPermissions, permissionMode, allowWildcardPermission)) {
           throw new ForbiddenError('Missing required permission', {

@@ -19,8 +19,6 @@ declare module "next-auth" {
       type?: CrewType
       firstName?: string
       lastName?: string
-      uuid?: string
-      roleUuid?: string
       mustChangePassword?: boolean
       permissions?: string[]
     } & DefaultSession["user"]

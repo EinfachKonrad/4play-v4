@@ -1,20 +1,15 @@
 import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-import ProtectedPage from "@/components/utility/ProtectedPage";
+import Head from "next/head";
+import useInstanceConfig from "@/hooks/useInstanceConfig";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export default function Home() {
+  const instanceConfig = useInstanceConfig();
   return (
-    <ProtectedPage permission="viewDashboard" pageTitle="Dashboard">
+    <>
+    <Head>
+      <title>Dashboard &bull; {instanceConfig?.name ?? "4play"}</title>
+    </Head>
     <div
       className={`flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
     >
@@ -76,6 +71,6 @@ export default function Home() {
         </div>
       </main>
     </div>
-    </ProtectedPage>
+    </>
   );
 }
