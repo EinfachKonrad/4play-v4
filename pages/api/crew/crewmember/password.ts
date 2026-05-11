@@ -1,6 +1,6 @@
 import { ApiRequest, withApi } from "@/lib/middleware";
 import clientPromise from "@/lib/mongodb";
-import CrewMember from "@/types/settings/crew/crewMember";
+import CrewMember from "@/types/crewMember";
 import { compare, hash } from "bcryptjs";
 import { NextApiResponse } from "next";
 

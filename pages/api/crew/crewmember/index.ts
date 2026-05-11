@@ -4,7 +4,7 @@
 
 import { NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
-import CrewMember from '@/types/settings/crew/crewMember'
+import CrewMember from '@/types/crewMember'
 import { decryptData, encryptData } from '@/lib/encryprion'
 import {
     ApiRequest,

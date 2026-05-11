@@ -1,5 +1,14 @@
 import { MongoClient } from 'mongodb';
 
+// Source - https://stackoverflow.com/a/79892633
+// Posted by Xoosk
+// Retrieved 2026-05-11, License - CC BY-SA 4.0
+// fix or some wild DNS issues with MongoDB Atlas clusters that only appears in some envoirments
+
+import { setServers } from "node:dns/promises";
+setServers(["1.1.1.1", "8.8.8.8"]);
+
+
 if (!process.env.V4_URI) {
   throw new Error('Bitte setze die Umgebungsvariable V4_URI in .env.local');
 }

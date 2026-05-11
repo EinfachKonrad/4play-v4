@@ -12,7 +12,7 @@ import React, { useState } from 'react'
 
 type NavigationItem = {
     name: string
-    href: string
+    href?: string
     icon: LucideIcon
     requiredPermission?: string
     children?: NavigationItem[]
@@ -20,23 +20,25 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
     { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Kalender', href: '/calendar', icon: Calendar, requiredPermission: 'accessCalendar', children: [
-        { name: 'Dispo-Ansicht', href: '/calendar/crew', icon: UsersRound, requiredPermission: 'accessCrewCalendar' },
-    ] },
+    { name: 'Kalender', href: '/calendar', icon: Calendar, requiredPermission: 'accessCalendar'},
     { name: 'Equipment', href: '/equipment', icon: Package, requiredPermission: 'accessEquipment' },
     { name: 'Kontakte', href: '/contacts', icon: Book, requiredPermission: 'accessContacts', children: [
         { name: 'Dienstleister', href: '/contacts/suppliers', icon: Building2, requiredPermission: 'accessSuppliers' },
         { name: 'Kunden', href: '/contacts/clients', icon: BookUser, requiredPermission: 'accessClients' },
+    ] },
+    { name: 'Crew', href: '/crew', icon: Users, requiredPermission: 'accessCrew', children: [
+        { name: 'Dispo-Ansicht', href: '/crew/disposition', icon: UsersRound, requiredPermission: 'accessDisposition' },
     ] },
     { name: 'Einstellungen', href: '/settings', icon: Settings, requiredPermission: 'accessSettings', children: [
         { name: 'Brandings', href: '/settings/brandings', icon: Building2, requiredPermission: 'accessBrandings', children: [
             { name: 'Briefpapier', href: '/settings/brandings/stationery', icon: Scroll, requiredPermission: 'accessStationery' },
             { name: 'Textbausteine', href: '/settings/textblocks', icon: ClipboardType, requiredPermission: 'accessTextblocks' },
         ] },
-        { name: 'Standorte', href: '/settings/warehouses', icon: Warehouse, requiredPermission: 'accessWarehouses' },
-        { name: 'Positionen', href: '/settings/positions', icon: Award, requiredPermission: 'accessPositions' },
-        { name: 'Crew', href: '/settings/crew', icon: Users, requiredPermission: 'accessCrew' },
-        { name: 'Rollen', href: '/settings/roles', icon: ShieldUser, requiredPermission: 'accessRoles' },
+        { name: 'Standorte', href: '/settings/warehouses', icon: Warehouse, requiredPermission: 'accessWarehouseSettings' },
+        { name: 'Crew', icon: Users, requiredPermission: 'accessCrewSettings', children: [
+            { name: 'Positionen', href: '/settings/crew/positions', icon: Award, requiredPermission: 'accessCrewPositionSettings' },
+            { name: 'Rollen', href: '/settings/crew/roles', icon: ShieldUser, requiredPermission: 'accessCrewRoleSettings' },
+        ]}
     ] },
 ]
 
@@ -48,8 +50,8 @@ function Item({ item, extendSidebar }: { item: NavigationItem; extendSidebar: bo
         <>
             {(!item.requiredPermission || permissions.includes(item.requiredPermission) || permissions.includes("*")) ? (
                 <Link
-                    href={router.pathname === item.href ? '#' : item.href}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${router.pathname === item.href || (router.pathname.startsWith(item.href) && item.children != null) ? 'bg-gray-700' : ''}   `}
+                    href={router.pathname === item.href ? '#' : (item.href ?? '#')}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${router.pathname === item.href || (router.pathname.startsWith(item.href ?? '') && item.children != null) ? 'bg-gray-700' : ''}   `}
                 >
                     <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center transition-all duration-200 ${extendSidebar ? '' : 'w-full'}`}> 
                         <item.icon />
@@ -57,7 +59,7 @@ function Item({ item, extendSidebar }: { item: NavigationItem; extendSidebar: bo
                     {extendSidebar ? <span className="truncate">{item.name}</span> : null}
                 </Link>
             ) : null}
-            {item.children && (extendSidebar || router.pathname.startsWith(item.href)) ? (
+            {item.children && (extendSidebar || router.pathname.startsWith(item.href ?? '')) ? (
                 <div className="ml-4 mt-1 space-y-1">
                     {item.children.map((child) => (
                         <Item key={child.name} item={child} extendSidebar={extendSidebar} />

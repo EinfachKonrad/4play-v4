@@ -4,7 +4,7 @@ import LoadingText from '@/components/ui/LoadingText'
 import MessageBox from '@/components/ui/MessageBox'
 import PageTitle from '@/components/utility/PageTitle'
 import useInstanceConfig from '@/hooks/useInstanceConfig'
-import CrewMember from '@/types/settings/crew/crewMember'
+import CrewMember from '@/types/crewMember'
 import { Calendar1, LetterText, Mail, Phone, User, UserRound } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Head from 'next/head'
@@ -26,7 +26,7 @@ function profilePage() {
 
     async function fetchUser() {
         try {
-            const res = await fetch('/api/settings/crew/crewmember?uuid=' + session?.user?.uuid)
+            const res = await fetch('/api/crew/crewmember?uuid=' + session?.user?.uuid)
             if (!res.ok) {
                 throw new Error(`Error fetching user: ${res.statusText}`)
             }
@@ -46,7 +46,7 @@ function profilePage() {
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
-            const res = await fetch('/api/settings/crew/crewmember?uuid=' + session?.user?.uuid, {
+            const res = await fetch('/api/crew/crewmember?uuid=' + session?.user?.uuid, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ function profilePage() {
         }
 
         try {
-            const res = await fetch('/api/settings/crew/crewmember/password?uuid=' + session?.user?.uuid, {
+            const res = await fetch('/api/crew/crewmember/password?uuid=' + session?.user?.uuid, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

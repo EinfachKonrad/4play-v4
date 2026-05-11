@@ -1,0 +1,25 @@
+access  -> view some page(s)
+view    -> read some data
+manage  -> edit some data
+
+
+
+accessCalendar          // access to /calendar/ -> view events and appointments one is booked to
+    viewEvents          // read all events
+    manageEvents        // edit all events
+    viewAppointments    // read all appointments
+    manageAppointments  // edit all appointments
+
+accessEquipment             // access to /equipment/ -> view equipment and quantities but no other data
+    viewOwnEquipment        // read all data of own equipment
+    manageOwnEquipent       // edit own equipment
+    viewExternalEquipment   // read all data of external equipment
+    manageExternalEquipment // edit external equipment
+
+
+accessCrew              // access to /crew/
+
+    manageOwnInformation    // edit own data
+    viewCrewNames         // read names of crew members
+    viewCrewMembers         // read all data of others
+    manageCrewMembers       // edit other crew members
