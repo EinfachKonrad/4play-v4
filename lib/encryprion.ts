@@ -49,7 +49,11 @@ export function encryptData(data: string) {
   ).toString('base64')
 }
 
-export function decryptData(encryptedData: string) {
+export function decryptData(encryptedData: unknown) {
+  if (typeof encryptedData !== 'string') {
+    return encryptedData
+  }
+
   const { crypto, key, encryptionIV } = getKeys()
   // Backward-compatible: some legacy records are plain text, not encrypted.
   // Only decrypt strings that look like base64-encoded hex payloads.
