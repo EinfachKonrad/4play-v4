@@ -8,8 +8,32 @@ import { NextApiResponse } from "next";
 // GET /api/crew?type=internal
 // GET /api/crew?type=external
 
+type CrewMemberWithOptionalMongoId = CrewMember & { _id?: unknown }
+
+function buildDecryptedMember(member: CrewMember): CrewMember {
+    const { _id, passwordHash, ...safe } = member as CrewMemberWithOptionalMongoId
+
+    return {
+        ...safe,
+        type: decryptData(safe.type) as CrewMember['type'],
+        firstName: decryptData(safe.firstName) as string,
+        lastName: decryptData(safe.lastName) as string,
+        email: decryptData(safe.email) as CrewMember['email'],
+        phone: decryptData(safe.phone) as CrewMember['phone'],
+        dateOfBirth: decryptData(safe.dateOfBirth) as CrewMember['dateOfBirth'],
+        roleUuid: decryptData(safe.roleUuid) as string,
+    }
+}
+
+function buildLimitedMember(member: CrewMember) {
+    const decrypted = buildDecryptedMember(member)
+    const { uuid, firstName, lastName, type } = decrypted
+    return { uuid, firstName, lastName, type }
+}
+
 async function handler(req: ApiRequest, res: NextApiResponse) {
     const userPermissions = req.user?.permissions || []
+    const canViewCrewMembers = userPermissions.includes('viewCrewMembers') || userPermissions.includes('*')
 
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' })
@@ -18,43 +42,13 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     const client = await clientPromise
     const db = client.db('settings')
 
-    if (req.query.type === 'internal') {
-        const members = await db.collection<CrewMember>('crewmembers').find({ type: 'internal' }).toArray()
-        const filteredMembers = members.map(member => {
-            if (!userPermissions.includes('viewCrewMembers')) {
-                const { uuid, firstName, lastName } = member
-                return { uuid, firstName, lastName }
-            }
-            return member
-        })
-        return res.status(200).json(filteredMembers)
-    }
-
-    if (req.query.type === 'external') {
-        const members = await db.collection<CrewMember>('crewmembers').find({ type: 'external' }).toArray()
-        const filteredMembers = members.map(member => {
-            if (!userPermissions.includes('viewCrewMembers')) {
-                const { uuid, firstName, lastName } = member
-                return { uuid, firstName, lastName }
-            }
-            return member
-        })
-        return res.status(200).json(filteredMembers)
-    }
-
+    const requestedType = req.query.type === 'internal' || req.query.type === 'external' ? req.query.type : undefined
     const members = await db.collection<CrewMember>('crewmembers').find().toArray()
-    const filteredMembers = members.map(member => {
-        if (!userPermissions.includes('viewCrewMembers')) {
-            return { 
-                uuid: member.uuid,
-                firstName: decryptData(member.firstName),
-                lastName: decryptData(member.lastName),
-                type: decryptData(member.type)
-            }
-        }
-        return member
-    })
-    return res.status(200).json(filteredMembers)
+    const responseMembers = members
+        .map(member => canViewCrewMembers ? buildDecryptedMember(member) : buildLimitedMember(member))
+        .filter(member => !requestedType || member.type === requestedType)
+
+    return res.status(200).json(responseMembers)
 }
 
 export default withApi(handler, {})
