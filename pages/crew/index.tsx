@@ -1,8 +1,10 @@
+import EditCrewMemberModal from '@/components/modals/editCrewMember'
+import Button from '@/components/ui/Button'
 import Navbar from '@/components/ui/Navbar'
 import Table from '@/components/ui/Table'
 import PageTitle from '@/components/utility/PageTitle'
 import ProtectedPage from '@/components/utility/ProtectedPage'
-import { Box, Folders, House, UsersRound, Pencil } from 'lucide-react'
+import { Box, Folders, House, UsersRound, Pencil, Plus, UserStar } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
 function CrewPage() {
@@ -12,10 +14,15 @@ function CrewPage() {
     lastName: string
     type: 'internal' | 'external'
     email: string
+    roleUuid: string
+    timeclock: any
   }
 
   const [members, setMembers] = useState<CrewMember[]>([])
   const [view, setView] = useState<'internal' | 'external'>('internal')
+  const [loading, setLoading] = useState(true)
+  const [target, setTarget] = useState<CrewMember | null>(null)
+  const [displayEditModal, setDisplayEditModal] = useState(false)
 
   async function fetchCrew() {
     try {
@@ -25,6 +32,7 @@ function CrewPage() {
       }
       const data = await response.json()
       setMembers(data)
+      setLoading(false)
     } catch (error) {
       console.error('Error fetching crew members:', error)
     }
@@ -34,43 +42,59 @@ function CrewPage() {
     fetchCrew();
   }, [])
 
+  async function handleEdit(member: CrewMember) {
+    setTarget(member)
+    setDisplayEditModal(true)
+  }
+
+
+  async function sortByFirstName() {
+    const sorted = [...members].sort((a, b) => a.firstName.localeCompare(b.firstName))
+    setMembers(sorted)
+  }
+
+  async function sortByLastName() {
+    const sorted = [...members].sort((a, b) => a.lastName.localeCompare(b.lastName))
+    setMembers(sorted)
+  }
+
   return (
     <ProtectedPage permission="accessCrew" pageTitle='Crew'>
       <div className="flex items-center justify-between mb-4">
         <PageTitle title="Crew" icon={UsersRound} />
+        <div className="flex items-center gap-2">
+            <Button>
+              <Plus className='inline h-4 w-4' />
+              <span className='!p-0'>Neu</span>
+            </Button>
         <Navbar items={[
           { id: 'internal', name: 'Intern', onClick: () => setView('internal'), icon: House},
           { id: 'external', name: 'Extern', onClick: () => setView('external'), icon: Folders, requiredPermission: 'viewExternalCrewMembers'},
         ]} activeItemId={view} />
+        </div>
       </div>
       {
-        
-          // <ul className="space-y-2">
-          //   {members.map((member: any) => (
-          //     (view === member.type) && (
-          //     <li key={member.uuid} className="p-4 border rounded">
-          //       <p className="font-medium">{member.firstName} {member.lastName}</p>
-          //       <p className="text-sm text-muted-foreground">Type: {member.type}</p>
-          //     </li>
-          //     )
-          //     ))}
-          // </ul>
           <Table columns={[
-            { id: 'firstName', name: 'Vorname' },
-            { id: 'lastName', name: 'Nachname' },
-            { id: 'email', name: 'Email', onClick: () => alert('Email clicked') },
-            { id: 'options', name: 'Optionen', onClick: () => alert('Optionen clicked') },
+            { id: 'firstName', name: 'Vorname', sortable: true },
+            { id: 'lastName', name: 'Nachname', sortable: true },
+            { id: 'email', name: 'Email', sortable: true },
+            { id: 'options', name: 'Optionen' },
           ]} data={members.filter(member => member.type === view)
           .map(member => ({
             ...member,
             options: (
-              <button onClick={() => console.log(member.uuid)} className="p-1 hover:text-blue-600">
+              <button onClick={() => handleEdit(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
                 <Pencil size={16} />
               </button>
             ),
           }))
           } />
        
+      }
+      {
+        displayEditModal && target && (
+          <EditCrewMemberModal {...target!}  onClose={() => setDisplayEditModal(false)} />
+        )
       }
     </ProtectedPage>
   )

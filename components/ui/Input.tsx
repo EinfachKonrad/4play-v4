@@ -2,16 +2,17 @@ import React from 'react'
 
 interface InputProps {
     className?: string
-    value: string
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+    value?: string
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
     placeholder?: string
     type?: string
     id?: string
     required?: boolean
     maxLength?: number
+    defaultValue?: string
 }
 
-export default function Input({ value, onChange, placeholder, type = 'text', id, className, required = false, maxLength }: InputProps) {
+export default function Input({ value, onChange, placeholder, type = 'text', id, className, required = false, maxLength, defaultValue }: InputProps) {
   return (
     <input
       type={type}
@@ -22,6 +23,7 @@ export default function Input({ value, onChange, placeholder, type = 'text', id,
       className={`border-b w-full m-2 ${className}`}
       required={required}
       maxLength={maxLength}
+      defaultValue={defaultValue}
     />
   )
 }

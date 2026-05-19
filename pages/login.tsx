@@ -1,3 +1,5 @@
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 import useInstanceConfig from '@/hooks/useInstanceConfig'
 import { signIn, useSession } from 'next-auth/react'
 import Head from 'next/head'
@@ -64,23 +66,21 @@ function LoginPage() {
           <h1 className='text-3xl font-bold mb-2'>{instanceConfig?.name ?? "4play"}</h1>
             <h2 className='text-2xl font-bold'>Login</h2>
             <form className='flex flex-col gap-4 mt-4' onSubmit={handleSubmit}>
-                <input
+                <Input
                     type="text"
                     placeholder='Email'
-                    className='border p-2 rounded'
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                 />
-                <input
+                <Input
                     type="password"
                     placeholder='Passwort'
-                    className='border p-2 rounded'
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                 />
-                <button type="submit" className='text-sm rounded-md border border-gray-800 p-1 cursor-pointer transition-all duration-200 hover:bg-gray-700' disabled={loading}>
+                <Button type="submit" className='m-2 w-full' disabled={loading}>
                     {loading ? 'Lädt...' : 'Login'}
-                </button>
+                </Button>
                 {error && <p className='text-red-500'>{error}</p>}
             </form>
         </div>
