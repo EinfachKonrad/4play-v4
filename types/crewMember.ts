@@ -38,4 +38,10 @@ export default interface CrewMember {
         }>
     };
 
+    driversLicense?: Array<{
+        type: string;   // type of the driver's license (e.g. "Class B", "Class C", "Class D", etc.)
+        number: string; // driver's license number
+        expirationDate: Date;    // expiration date of the driver's license
+    }>;
+
 }

@@ -4,7 +4,7 @@ import Navbar from '@/components/ui/Navbar'
 import Table from '@/components/ui/Table'
 import PageTitle from '@/components/utility/PageTitle'
 import ProtectedPage from '@/components/utility/ProtectedPage'
-import { Box, Folders, House, UsersRound, Pencil, Plus, UserStar } from 'lucide-react'
+import { Box, Folders, House, UsersRound, Pencil, Plus, UserStar, Timer } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
 function CrewPage() {
@@ -78,6 +78,7 @@ function CrewPage() {
             { id: 'firstName', name: 'Vorname', sortable: true },
             { id: 'lastName', name: 'Nachname', sortable: true },
             { id: 'email', name: 'Email', sortable: true },
+            { id: 'features', name: 'Funktionen' },
             { id: 'options', name: 'Optionen' },
           ]} data={members.filter(member => member.type === view)
           .map(member => ({
@@ -87,6 +88,9 @@ function CrewPage() {
                 <Pencil size={16} />
               </button>
             ),
+            features: (
+              <>{member.timeclock?.enabled === true ? <div title='Zeiterfassung'><Timer size={16} /></div> : null}</>
+            )
           }))
           } />
        

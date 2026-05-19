@@ -24,7 +24,7 @@ export default function Calendar() {
         ))}
 
         {days.map((day, i) => (
-          <div key={i} className={`min-h-[100px] p-1 text-sm border flex flex-col ${day.getMonth() === currentMonth.getMonth() ? 'bg-gray-900 text-gray-200 border-gray-800' : 'text-gray-500 border-gray-900'}`}>
+          <div key={i} className={`min-h-[100px] p-1 text-sm border flex flex-col ${day.getMonth() === currentMonth.getMonth() ? 'bg-neutral-900 text-gray-200 border-neutral-800' : 'text-gray-500 border-neutral-900'}`}>
             <div className="text-right text-xs">
               <span className={`px-1 rounded ${isSameDay(day, new Date()) && day.getMonth() === new Date().getMonth() ? 'bg-gray-600 text-white' : ''}`}>
                 {format(day, 'd')}
