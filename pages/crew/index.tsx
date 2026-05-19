@@ -1,11 +1,14 @@
 import EditCrewMemberModal from '@/components/modals/editCrewMember'
 import Button from '@/components/ui/Button'
+import MessageBox from '@/components/ui/MessageBox'
 import Navbar from '@/components/ui/Navbar'
 import Table from '@/components/ui/Table'
 import PageTitle from '@/components/utility/PageTitle'
 import ProtectedPage from '@/components/utility/ProtectedPage'
-import { Box, Folders, House, UsersRound, Pencil, Plus, UserStar, Timer } from 'lucide-react'
+import { Box, Folders, House, UsersRound, Pencil, Plus, UserStar, Timer, RotateCcwKey } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
+import Modal from '@/components/ui/Modal'
+import Input from '@/components/ui/Input'
 
 function CrewPage() {
   interface CrewMember {
@@ -23,6 +26,13 @@ function CrewPage() {
   const [loading, setLoading] = useState(true)
   const [target, setTarget] = useState<CrewMember | null>(null)
   const [displayEditModal, setDisplayEditModal] = useState(false)
+  const [displayResetPasswordMessageBox, setDisplayResetPasswordMessageBox] = useState(false)
+  const [displayReauthModal, setDisplayReauthModal] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [reauthError, setReauthError] = useState<string | null>(null)
+  const [displayCopySuccess, setDisplayCopySuccess] = useState(false)
 
   async function fetchCrew() {
     try {
@@ -47,15 +57,54 @@ function CrewPage() {
     setDisplayEditModal(true)
   }
 
-
-  async function sortByFirstName() {
-    const sorted = [...members].sort((a, b) => a.firstName.localeCompare(b.firstName))
-    setMembers(sorted)
+  async function handleResetPassword(member: CrewMember) {
+    setTarget(member)
+    setDisplayResetPasswordMessageBox(true)
   }
 
-  async function sortByLastName() {
-    const sorted = [...members].sort((a, b) => a.lastName.localeCompare(b.lastName))
-    setMembers(sorted)
+  async function confirmResetPassword() {
+    // Open re-auth modal where admin must enter their password
+    setDisplayResetPasswordMessageBox(false)
+    setAdminPassword('')
+    setReauthError(null)
+    setDisplayReauthModal(true)
+  }
+
+  async function confirmReauthAndReset() {
+    if (!target) return
+    setResetting(true)
+    setReauthError(null)
+    try {
+      const res = await fetch('/api/crew/crewmember/reset?uuid=' + target.uuid, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || res.statusText || 'Reset failed')
+      }
+      setTempPassword(data.tempPassword)
+      setDisplayReauthModal(false)
+    } catch (err: any) {
+      setReauthError(err?.message || 'Fehler beim Zurücksetzen')
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  function closeTempModal() {
+    setTempPassword(null)
+    setTarget(null)
+    // refresh list so UI reflects mustChangePassword if needed
+    fetchCrew()
+  }
+
+  async function copyTempPassword() {
+    if (!tempPassword) return
+    try { await navigator.clipboard.writeText(tempPassword) } catch {}
+    setDisplayCopySuccess(true)
+    setTimeout(() => setDisplayCopySuccess(false), 2000)
   }
 
   return (
@@ -84,13 +133,19 @@ function CrewPage() {
           .map(member => ({
             ...member,
             options: (
-              <button onClick={() => handleEdit(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
-                <Pencil size={16} />
-              </button>
+              <>
+                <button onClick={() => handleEdit(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
+                  <Pencil size={16} />
+                </button>
+                <button onClick={() => handleResetPassword(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
+                  <RotateCcwKey size={16} />
+                </button>
+              </>
             ),
             features: (
               <>{member.timeclock?.enabled === true ? <div title='Zeiterfassung'><Timer size={16} /></div> : null}</>
-            )
+            ),
+            email: <a href={`mailto:${member.email}`} className="hover:underline">{member.email}</a>
           }))
           } />
        
@@ -100,6 +155,47 @@ function CrewPage() {
           <EditCrewMemberModal {...target!}  onClose={() => setDisplayEditModal(false)} />
         )
       }
+
+      { displayResetPasswordMessageBox && (
+        <MessageBox 
+          title='Passwort zurücksetzen'
+          icon={RotateCcwKey}
+          description='Möchtest du das Passwort dieses Crew-Mitglieds zurücksetzen?'
+          options={[
+            { label: 'Abbrechen', type: 'primary', onClick: () => setDisplayResetPasswordMessageBox(false) },
+            { label: 'Passwort zurücksetzen', type: 'danger', onClick: () => confirmResetPassword() },
+          ]}
+        />
+      )}
+
+      { displayReauthModal && target && (
+        <Modal title='Admin-Re-Authentifizierung' icon={RotateCcwKey} onClose={() => setDisplayReauthModal(false)}>
+          <div className='flex flex-col gap-4'>
+            <p className='text-sm text-gray-300'>Bitte gib dein Administrator-Passwort ein, um das Passwort von <strong>{target.firstName} {target.lastName}</strong> zurückzusetzen.</p>
+            <Input type='password' value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder='Dein Passwort' />
+            {reauthError && <div className='text-sm text-red-400'>{reauthError}</div>}
+            <div className='flex gap-2'>
+              <Button onClick={() => setDisplayReauthModal(false)}>Abbrechen</Button>
+              <Button onClick={() => confirmReauthAndReset()} disabled={resetting}>{resetting ? 'Bitte warten...' : 'Bestätigen'}</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      { tempPassword && target && (
+        <Modal title='Temporäres Passwort' icon={RotateCcwKey} onClose={() => closeTempModal()}>
+          <div className='flex flex-col gap-4'>
+            <p className='text-sm text-gray-300'>Das temporäre Passwort für <strong>{target.firstName} {target.lastName}</strong> lautet (einmalig):</p>
+            <div className='p-4 bg-neutral-900 rounded text-lg font-mono select-all'>{tempPassword}</div>
+            <div className='flex gap-2'>
+              <Button onClick={() => { copyTempPassword() }}>Kopieren</Button>
+              <Button onClick={() => closeTempModal()}>Schließen</Button>
+            </div>
+              {displayCopySuccess && <div className='text-sm text-green-400'>In Zwischenablage kopiert!</div>}
+            <p className='text-xs text-gray-500'>Hinweis: Dies wird nur einmal angezeigt. Der Benutzer wird beim nächsten Login zum Ändern des Passworts aufgefordert.</p>
+          </div>
+        </Modal>
+      )}
     </ProtectedPage>
   )
 }

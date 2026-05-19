@@ -51,7 +51,7 @@ function Item({ item, extendSidebar }: { item: NavigationItem; extendSidebar: bo
             {(!item.requiredPermission || permissions.includes(item.requiredPermission) || permissions.includes("*")) ? (
                 <Link
                     href={router.pathname === item.href ? '#' : (item.href ?? '#')}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${router.pathname === item.href || (router.pathname.startsWith(item.href ?? '') && item.children != null) ? 'bg-gray-700' : ''}   `}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${router.pathname === item.href ? 'bg-gray-700' : ''}   `}
                 >
                     <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center transition-all duration-200 ${extendSidebar ? '' : 'w-full'}`}> 
                         <item.icon />

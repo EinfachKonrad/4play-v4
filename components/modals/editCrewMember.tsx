@@ -87,7 +87,7 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                             </div>
                         ) : (
                             <div className='flex flex-col gap-4'>
-                                <p className='text-sm text-gray-400'>Die Zeiterfassung ist derzeit deaktiviert. Möchtest du sie aktivieren?</p>
+                                <p className='text-sm text-gray-400'>Die Zeiterfassung für dieses Konto ist derzeit deaktiviert. Zeiterfassung aktivieren?</p>
                                 <Button onClick={() => setMember({ ...member, timeclock: { ...member.timeclock, enabled: true } })}>
                                     Zeiterfassung aktivieren
                                 </Button>
