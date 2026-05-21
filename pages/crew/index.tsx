@@ -142,7 +142,6 @@ function CrewPage() {
             { id: 'firstName', name: 'Vorname', sortable: true },
             { id: 'lastName', name: 'Nachname', sortable: true },
             { id: 'email', name: 'Email', sortable: true },
-            { id: 'role', name: 'Rolle', sortable: true },
             { id: 'features', name: 'Funktionen' },
             { id: 'options', name: 'Optionen' },
           ]} data={members.filter(member => member.type === view)

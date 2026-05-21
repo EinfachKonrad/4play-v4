@@ -3,7 +3,7 @@
 import useInstanceConfig from '@/hooks/useInstanceConfig'
 import { usePermissions } from '@/hooks/usePermission'
 import type { LucideIcon } from 'lucide-react'
-import { Award, Book, BookUser, Building2, Calendar, CalendarRange, ChevronDown, ChevronRight, ClipboardType, Clock, ClockFading, Home, Package, PowerCircle, Scroll, Settings, ShieldUser, SquareUser, Timer, User, Users, UsersRound, Warehouse } from 'lucide-react'
+import { Award, Book, BookOpenText, BookUser, Building2, Calendar, CalendarRange, ChevronDown, ChevronRight, ClipboardType, Clock, ClockFading, Home, Package, PowerCircle, Scroll, Settings, ShieldUser, SquareUser, Timer, User, Users, UsersRound, Warehouse } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -21,11 +21,12 @@ type NavigationItem = {
 const navigationItems: NavigationItem[] = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Zeiterfassung', href: '/timeclock', icon: Timer, requiredPermission: 'accessTimeclock' },
+    { name: 'Knowledge Base', href: '/knowledge', icon: BookOpenText, requiredPermission: 'accessKnowledgeBase' },
     { name: 'Kalender', href: '/calendar', icon: Calendar, requiredPermission: 'accessCalendar'},
     { name: 'Equipment', href: '/equipment', icon: Package, requiredPermission: 'accessEquipment' },
     { name: 'Kontakte', href: '/contacts', icon: Book, requiredPermission: 'accessContacts', children: [
-        { name: 'Dienstleister', href: '/contacts/suppliers', icon: Building2, requiredPermission: 'accessSuppliers' },
-        { name: 'Kunden', href: '/contacts/clients', icon: BookUser, requiredPermission: 'accessClients' },
+        // { name: 'Dienstleister', href: '/contacts/suppliers', icon: Building2, requiredPermission: 'accessSuppliers' },
+        // { name: 'Kunden', href: '/contacts/clients', icon: BookUser, requiredPermission: 'accessClients' },
     ] },
     { name: 'Crew', href: '/crew', icon: Users, requiredPermission: 'accessCrew', children: [
         { name: 'Dispo-Ansicht', href: '/crew/disposition', icon: CalendarRange, requiredPermission: 'accessCrewDisposition' },
