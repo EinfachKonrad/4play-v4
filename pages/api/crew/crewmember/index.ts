@@ -59,6 +59,20 @@ function encryptUpdatePayload(updates: Record<string, unknown>) {
         )
     }
 
+    // Encrypt license fields (type, name, validUntil) if present
+    if (Array.isArray(encryptedUpdates.licenses)) {
+        encryptedUpdates.licenses = encryptedUpdates.licenses.map((lic) => {
+            if (lic && typeof lic === 'object') {
+                const newLic: Record<string, unknown> = { ...lic }
+                if (typeof newLic.type === 'string') newLic.type = encryptIfPlain(newLic.type as string)
+                if (typeof newLic.name === 'string') newLic.name = encryptIfPlain(newLic.name as string)
+                if (typeof newLic.validUntil === 'string') newLic.validUntil = encryptIfPlain(newLic.validUntil as string)
+                return newLic
+            }
+            return lic
+        })
+    }
+
     return encryptedUpdates
 }
 
@@ -86,6 +100,14 @@ function buildResponseMember(member: CrewMember, canViewRoleUuid: boolean, canVi
         email: decryptField(safe.email),
         phone: decryptField(safe.phone),
         dateOfBirth: decryptField(safe.dateOfBirth),
+        licenses: Array.isArray((safe as any).licenses)
+            ? (safe as any).licenses.map((lic: any) => ({
+                  ...lic,
+                  type: decryptField(lic.type),
+                  name: decryptField(lic.name),
+                  validUntil: decryptField(lic.validUntil),
+              }))
+            : (safe as any).licenses,
         ...(canViewRoleUuid ? { roleUuid: roleUuid } : {}),
         ...(canViewMustChangePassword ? { mustChangePassword } : {}),
     }

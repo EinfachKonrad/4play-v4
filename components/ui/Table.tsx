@@ -31,7 +31,7 @@ export default function Table({ columns, data }: TableProps) {
 
   return (
     <table className="min-w-full divide-y divide-gray-200">
-      <thead className="">
+      <thead className="select-none">
         <tr>
             {columns.map((column) => (
                 <th key={column.id} onClick={column.sortable ? () => {handleSort(column.id)} : undefined} className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.sortable ? 'cursor-pointer hover:text-gray-700' : ''}`}>

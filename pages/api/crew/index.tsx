@@ -22,6 +22,14 @@ function buildDecryptedMember(member: CrewMember): CrewMember {
         phone: decryptData(safe.phone) as CrewMember['phone'],
         dateOfBirth: decryptData(safe.dateOfBirth) as CrewMember['dateOfBirth'],
         roleUuid: decryptData(safe.roleUuid) as string,
+        licenses: Array.isArray((safe as any).licenses)
+            ? (safe as any).licenses.map((lic: any) => ({
+                  ...lic,
+                  type: decryptData(lic.type),
+                  name: decryptData(lic.name),
+                  validUntil: decryptData(lic.validUntil),
+              }))
+            : (safe as any).licenses,
     }
 }
 

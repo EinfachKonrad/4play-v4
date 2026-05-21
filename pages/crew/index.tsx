@@ -5,10 +5,11 @@ import Navbar from '@/components/ui/Navbar'
 import Table from '@/components/ui/Table'
 import PageTitle from '@/components/utility/PageTitle'
 import ProtectedPage from '@/components/utility/ProtectedPage'
-import { Box, Folders, House, UsersRound, Pencil, Plus, UserStar, Timer, RotateCcwKey } from 'lucide-react'
+import { Box, Folders, House, UsersRound, Pencil, Plus, UserStar, Timer, RotateCcwKey, Lock, BriefcaseMedical, Car, HeartPulse, GraduationCap } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
+import licenses from '../api/crew/data/licenses'
 
 function CrewPage() {
   interface CrewMember {
@@ -19,6 +20,14 @@ function CrewPage() {
     email: string
     roleUuid: string
     timeclock: any
+    mustChangePassword?: boolean
+    locked?: boolean
+    licenses?: Array<{
+      uuid: string
+      type: 'firstAid' | 'driversLicense' | 'examination' | 'training' | 'other'
+      name: string
+      validUntil?: Date
+    }>
   }
 
   const [members, setMembers] = useState<CrewMember[]>([])
@@ -55,6 +64,12 @@ function CrewPage() {
   async function handleEdit(member: CrewMember) {
     setTarget(member)
     setDisplayEditModal(true)
+  }
+
+  async function handleSaveEdit() {
+    setDisplayEditModal(false)
+    setTarget(null)
+    fetchCrew()
   }
 
   async function handleResetPassword(member: CrewMember) {
@@ -127,6 +142,7 @@ function CrewPage() {
             { id: 'firstName', name: 'Vorname', sortable: true },
             { id: 'lastName', name: 'Nachname', sortable: true },
             { id: 'email', name: 'Email', sortable: true },
+            { id: 'role', name: 'Rolle', sortable: true },
             { id: 'features', name: 'Funktionen' },
             { id: 'options', name: 'Optionen' },
           ]} data={members.filter(member => member.type === view)
@@ -134,16 +150,36 @@ function CrewPage() {
             ...member,
             options: (
               <>
-                <button onClick={() => handleEdit(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
+                <button title='Crew-Mitglied bearbeiten' onClick={() => handleEdit(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
                   <Pencil size={16} />
                 </button>
-                <button onClick={() => handleResetPassword(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
+                <button title='Passwort zurücksetzen' onClick={() => handleResetPassword(member)} className="p-1 cursor-pointer transition-all duration-200 hover:text-gray-700">
                   <RotateCcwKey size={16} />
                 </button>
               </>
             ),
             features: (
-              <>{member.timeclock?.enabled === true ? <div title='Zeiterfassung'><Timer size={16} /></div> : null}</>
+              <div className='inline-flex gap-2'>
+                {member.locked ? <div title='Gesperrt'><Lock className='text-red-600' size={16} /></div> : null}
+                {member.mustChangePassword ? <div title='Passwortänderung erforderlich'><RotateCcwKey className='text-yellow-500' size={16} /></div> : null}
+                {member.timeclock?.enabled === true ? <div title='Zeiterfassung'><Timer size={16} /></div> : null}
+                {
+                  member.licenses?.map((license) => (
+                    <>
+                      <div>
+
+                      </div>
+                      {
+                        license.type === 'firstAid' ? <div key={license.uuid} title='Erste-Hilfe-Lizenz'><BriefcaseMedical size={16} /></div> :
+                        license.type === 'driversLicense' ? <div key={license.uuid} title='Führerschein'><Car size={16} /></div> :
+                        license.type === 'examination' ? <div key={license.uuid} title='Prüfung'><HeartPulse size={16} /></div> :
+                        license.type === 'training' ? <div key={license.uuid} title='Schulung'><GraduationCap size={16} /></div> :
+                        <div key={license.uuid} title={license.name}><UserStar size={16} /></div>
+                      }
+                    </>
+                  ))
+                }
+                </div>
             ),
             email: <a href={`mailto:${member.email}`} className="hover:underline">{member.email}</a>
           }))
@@ -152,7 +188,7 @@ function CrewPage() {
       }
       {
         displayEditModal && target && (
-          <EditCrewMemberModal {...target!}  onClose={() => setDisplayEditModal(false)} />
+          <EditCrewMemberModal {...target!}  onClose={() => handleSaveEdit()} />
         )
       }
 

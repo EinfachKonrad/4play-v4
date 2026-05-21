@@ -38,7 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const userPromise = client
           .db("settings")
           .collection("crewmembers")
-          .findOne({ email: encryptData(email) })
+          .findOne({ email: encryptData(email), locked: { $ne: true } })
 
         const [user] = await Promise.all([
           userPromise,
