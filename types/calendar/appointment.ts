@@ -1,7 +1,7 @@
 export default interface Appointment {
     uuid: string; // appointment uuid (a-xxx)
 
-    eventUuid: string; // event uuid (e-xxx) that the appointment is linked to
+    eventUuid?: string; // event uuid (e-xxx) that the appointment is linked to
 
     name: string;
     description: string;

@@ -89,8 +89,12 @@ export class InternalServerError extends Error implements ApiError {
 export interface MiddlewareOptions {
   /** Required permission keys (e.g. 'viewEquipment') */
   requiredPermissions?: string[];
+  /** Method-specific required permissions (e.g. { GET: ['viewAppointments'], POST: ['viewAppointments', 'manageAppointments'] }) */
+  requiredPermissionsByMethod?: Record<string, string[]>;
   /** How required permissions are checked: all or any */
   permissionMode?: 'all' | 'any';
+  /** Method-specific permission mode; falls back to permissionMode */
+  permissionModeByMethod?: Record<string, 'all' | 'any'>;
   /** Optional roleUuid gate in addition to permissions */
   allowWildcardPermission?: boolean;
   /** Whether authentication is optional (for public endpoints) */
@@ -177,7 +181,9 @@ export function withApi(
 ): (req: NextApiRequest, res: NextApiResponse) => Promise<void> {
   const {
     requiredPermissions = [],
+    requiredPermissionsByMethod = {},
     permissionMode = 'all',
+    permissionModeByMethod = {},
     allowWildcardPermission = true,
     optionalAuth = false,
     verboseErrors = process.env.DEV_INSTANCE === 'true'
@@ -206,11 +212,16 @@ export function withApi(
           mustChangePassword: userMustChangePassword
         };
 
-        if (!hasRequiredPermissions(userPermissions, requiredPermissions, permissionMode, allowWildcardPermission)) {
+        const method = (req.method || '').toUpperCase();
+        const effectiveRequiredPermissions = requiredPermissionsByMethod[method] ?? requiredPermissions;
+        const effectivePermissionMode = permissionModeByMethod[method] ?? permissionMode;
+
+        if (!hasRequiredPermissions(userPermissions, effectiveRequiredPermissions, effectivePermissionMode, allowWildcardPermission)) {
           throw new ForbiddenError('Missing required permission', {
+            method,
             userPermissions,
-            requiredPermissions,
-            permissionMode,
+            requiredPermissions: effectiveRequiredPermissions,
+            permissionMode: effectivePermissionMode,
             allowWildcardPermission
           });
         }
