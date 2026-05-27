@@ -5,6 +5,7 @@ import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Appointment from '@/types/calendar/appointment'
 import CrewMember from '@/types/crewMember'
+import Dropdown from '../ui/Dropdown'
 
 interface CreateCalendarEntryModalProps {
   onClose: () => void
@@ -382,59 +383,7 @@ export default function CreateCalendarEntryModal({ onClose }: CreateCalendarEntr
 
                 <div>
                   <label className='text-sm text-gray-400'>Crew</label>
-
-                  <div className='m-2 border border-gray-800 rounded-md p-3 space-y-3'>
-                    <div className='flex items-center gap-2 border-b border-gray-800 pb-2'>
-                      <Search className='h-4 w-4 text-gray-400' />
-                      <input
-                        value={crewSearch}
-                        onChange={(e) => setCrewSearch(e.target.value)}
-                        placeholder='Crew suchen nach Name oder UUID'
-                        className='w-full bg-transparent outline-none'
-                      />
-                    </div>
-
-                    {selectedCrew.length > 0 && (
-                      <div className='flex flex-wrap gap-2'>
-                        {selectedCrew.map((member) => (
-                          <button
-                            key={member.uuid}
-                            type='button'
-                            onClick={() => toggleCrewMember(member.uuid)}
-                            className='inline-flex items-center gap-2 rounded-full border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800'
-                          >
-                            <span>{member.firstName} {member.lastName}</span>
-                            <X className='h-3 w-3' />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className='max-h-44 overflow-y-auto space-y-1'>
-                      {crewLoading && <p className='text-sm text-gray-400'>Crew wird geladen...</p>}
-                      {!crewLoading && filteredCrew.length === 0 && (
-                        <p className='text-sm text-gray-400'>Keine Crew-Mitglieder gefunden.</p>
-                      )}
-                      {!crewLoading && filteredCrew.map((member) => {
-                        const selected = entryData.crew?.some((crewMember) => crewMember.uuid === member.uuid) ?? false
-
-                        return (
-                          <button
-                            key={member.uuid}
-                            type='button'
-                            onClick={() => toggleCrewMember(member.uuid)}
-                            className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-all duration-200 ${selected ? 'border-yellow-600 bg-yellow-950/40' : 'border-gray-800 hover:bg-gray-800'}`}
-                          >
-                            <div>
-                              <p className='text-sm'>{member.firstName} {member.lastName}</p>
-                              <p className='text-xs text-gray-400'>{member.uuid} · {member.type}</p>
-                            </div>
-                            <span className='text-xs text-gray-400'>{selected ? 'Ausgewählt' : 'Hinzufügen'}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
+                  <Dropdown name='Crew-Mitglieder hinzufügen' searchable options={filteredCrew.map(member => ({ value: member.uuid, label: `${member.firstName} ${member.lastName}` }))} onSelect={(value) => toggleCrewMember(value)} allowCustom={false} />
                 </div>
                 <Button type='submit'>Erstellen</Button>
               </form>
