@@ -5,10 +5,99 @@ import React, { useEffect, useState } from 'react'
 import Navbar from '@/components/ui/Navbar'
 import { ProtectedPage } from '@/components/utility/ProtectedPage'
 import CreateCalendarEntryModal from '@/components/modals/createCalendarEntry'
-import { isSameDay } from 'date-fns'
+import { isSameDay, addDays, addWeeks, addMonths, addYears } from 'date-fns'
 import Appointment from '@/types/calendar/appointment'
+import { useRouter } from 'next/router'
+
+function addInterval(date: Date, interval: number, unit: 'day' | 'week' | 'month' | 'year'): Date {
+  switch (unit) {
+    case 'day': return addDays(date, interval)
+    case 'week': return addWeeks(date, interval)
+    case 'month': return addMonths(date, interval)
+    case 'year': return addYears(date, interval)
+    default: return date
+  }
+}
+
+function isAppointmentOnDay(a: Appointment, day: Date): boolean {
+  const start = new Date(a.date.start)
+  if (isSameDay(start, day)) return true
+  if (!a.repeat) return false
+
+  const endDate = a.repeat.endDate ? new Date(a.repeat.endDate) : null
+  let current = addInterval(start, a.repeat.interval, a.repeat.unit)
+  let count = 1
+
+  while (true) {
+    if (endDate && current > endDate) break
+    if (a.repeat.iterations !== undefined && count >= a.repeat.iterations) break
+    if (isSameDay(current, day)) return true
+    if (current > day) break
+    current = addInterval(current, a.repeat.interval, a.repeat.unit)
+    count++
+  }
+  return false
+}
+
+function getOccurrenceStart(a: Appointment, day: Date): Date {
+  const start = new Date(a.date.start)
+  if (isSameDay(start, day)) return start
+  if (!a.repeat) return start
+
+  const endDate = a.repeat.endDate ? new Date(a.repeat.endDate) : null
+  let current = addInterval(start, a.repeat.interval, a.repeat.unit)
+  let count = 1
+
+  while (true) {
+    if (endDate && current > endDate) break
+    if (a.repeat.iterations !== undefined && count >= a.repeat.iterations) break
+    if (isSameDay(current, day)) return current
+    if (current > day) break
+    current = addInterval(current, a.repeat.interval, a.repeat.unit)
+    count++
+  }
+  return start
+}
+
+function isValidDateRange(start: unknown, end: unknown): start is string {
+  const startDate = new Date(start as string)
+  const endDate = new Date(end as string)
+  return !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime())
+}
+
+function getEventDateRanges(event: any): Array<{ start: string; end: string }> {
+  const ranges: Array<{ start: string; end: string }> = []
+
+  if (isValidDateRange(event?.start, event?.end)) {
+    ranges.push({ start: event.start, end: event.end })
+  }
+
+  if (Array.isArray(event?.projects)) {
+    event.projects.forEach((project: any) => {
+      if (Array.isArray(project?.dates)) {
+        project.dates.forEach((dateRange: any) => {
+          if (isValidDateRange(dateRange?.start, dateRange?.end)) {
+            ranges.push({ start: dateRange.start, end: dateRange.end })
+          }
+        })
+      }
+    })
+  }
+
+  return ranges
+}
+
+function isRangeOnDay(start: Date, end: Date, day: Date): boolean {
+  const dayStart = new Date(day)
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(dayStart)
+  dayEnd.setDate(dayEnd.getDate() + 1)
+
+  return start < dayEnd && end >= dayStart
+}
 
 function CalendarPage() {
+  const router = useRouter()
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [displayCreateModal, setDisplayCreateModal] = useState(false)
   const [events, setEvents] = useState([])
@@ -68,33 +157,53 @@ function CalendarPage() {
 
     // Events
     events.forEach((e: any) => {
-      const eventStart = new Date(e.start)
-      const eventEnd = new Date(e.end)
-      if (isSameDay(eventStart, day) || isSameDay(eventEnd, day) || (eventStart < day && eventEnd > day)) {
+      const dateRanges = getEventDateRanges(e)
+      const isEventOnDay = dateRanges.some((range) => {
+        const rangeStart = new Date(range.start)
+        const rangeEnd = new Date(range.end)
+        return isRangeOnDay(rangeStart, rangeEnd, day)
+      })
+
+      if (!isEventOnDay || dateRanges.length === 0) {
+        return
+      }
+
+      const sortedRanges = [...dateRanges].sort((left, right) => left.start.localeCompare(right.start))
+      const firstRange = sortedRanges[0]
+      const lastRange = sortedRanges[sortedRanges.length - 1]
+
+      if (firstRange && lastRange) {
         entries.push({
           type: e.cancelled ? 'cancelled' : 'event',
-          title: (<div className='inline-flex items-center gap-1'>{e.title}</div>),
-          label: e.title,
-          start: e.start,
-          end: e.end,
+          title: (<div className='inline-flex items-center gap-1'>{e.name}</div>),
+          label: e.name,
+          start: firstRange.start,
+          end: lastRange.end,
           uuid: e.uuid,
-        })
-      }
+          contextMenuOptions: [
+            { id: 'view',
+              label: 'Ansehen',
+              icon: Calendar,
+              onClick: () => {router.push(`/calendar/event/${e.uuid}`)}
+            }
+          ]
+      })
+    }
     })
 
     // Appointments
     appointments.forEach((a) => {
       const apptStart = new Date(a.date?.start)
-      if (isSameDay(apptStart, day)) {
-        entries.push({
-          type: 'appointment',
-          title: (<div className='inline-flex items-center gap-1 truncate w-full'>{a.name} ({new Date(a.date.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</div>),
-          label: a.name,
-          start: new Date(a.date.start).toISOString(),
-          end: new Date(a.date.end).toISOString(),
-          uuid: a.uuid,
-        })
-      }
+      if (!isAppointmentOnDay(a, day)) return
+      const occurrenceStart = getOccurrenceStart(a, day)
+      entries.push({
+        type: 'appointment',
+        title: (<div className='inline-flex items-center gap-1 truncate w-full'>{a.name} ({occurrenceStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</div>),
+        label: a.name,
+        start: occurrenceStart.toISOString(),
+        end: new Date(occurrenceStart.getTime() + (new Date(a.date.end).getTime() - new Date(a.date.start).getTime())).toISOString(),
+        uuid: a.uid,
+      })
     })
 
     return entries

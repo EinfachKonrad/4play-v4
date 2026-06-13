@@ -1,4 +1,4 @@
-import { withApi, getUuidFromQuery } from '@/lib/middleware';
+import { withApi, getUidFromQuery } from '@/lib/middleware';
 import clientPromise from '@/lib/mongodb';
 import { compare, hash } from 'bcryptjs';
 import { NextApiResponse } from 'next';
@@ -13,7 +13,7 @@ async function genNumericPassword(len = 12) {
 async function handler(req: any, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const targetUuid = getUuidFromQuery(req.query.uuid);
+  const targetUid = getUidFromQuery(req.query.uid);
   const { adminPassword } = req.body ?? {};
   if (!adminPassword) return res.status(400).json({ error: 'adminPassword is required' });
 
@@ -22,17 +22,17 @@ async function handler(req: any, res: NextApiResponse) {
     const db = client.db('settings');
 
     // Verify admin password against the session user record
-    const adminUuid = req.user?.uuid;
-    if (!adminUuid) return res.status(401).json({ error: 'Unauthorized' });
+    const adminUid = req.user?.uid;
+    if (!adminUid) return res.status(401).json({ error: 'Unauthorized' });
 
-    const admin = await db.collection('crewmembers').findOne({ uuid: adminUuid });
+    const admin = await db.collection('crewmembers').findOne({ uid: adminUid });
     if (!admin || !admin.passwordHash) return res.status(403).json({ error: 'Admin account invalid' });
 
     const ok = await compare(adminPassword, admin.passwordHash);
     if (!ok) return res.status(401).json({ error: 'Admin password incorrect' });
 
     // Find target member
-    const member = await db.collection('crewmembers').findOne({ uuid: targetUuid });
+    const member = await db.collection('crewmembers').findOne({ uid: targetUid });
     if (!member) return res.status(404).json({ error: 'Crew member not found' });
 
     // Generate temporary numeric password
@@ -40,13 +40,13 @@ async function handler(req: any, res: NextApiResponse) {
     const tempHash = await hash(tempPassword, 12);
 
     // Update target passwordHash and set mustChangePassword
-    await db.collection('crewmembers').updateOne({ uuid: targetUuid }, { $set: { passwordHash: tempHash, mustChangePassword: true } });
+    await db.collection('crewmembers').updateOne({ uid: targetUid }, { $set: { passwordHash: tempHash, mustChangePassword: true } });
 
     // Write audit log
     await db.collection('auditLogs').insertOne({
-      actorUuid: adminUuid,
+      actorUid: adminUid,
       action: 'resetPassword',
-      targetUuid,
+      targetUid,
       ts: new Date(),
     });
 

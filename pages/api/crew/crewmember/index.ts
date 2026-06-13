@@ -13,20 +13,19 @@ import {
     NotFoundError,
     requireMethod,
     withApi,
-    getUuidFromQuery,
 } from '@/lib/middleware'
 
-// GET /api/settings/crew/crewmember?uuid=crewmemberUuid
+// GET /api/settings/crew/crewmember?uid=crewmemberUid
 // Own profile: always allowed (authenticated)
 // Other profiles: requires 'viewCrewMembers'
-// --> 200: { crewmember data (passwordHash omitted, _id omitted, roleUuid only with view permission) }
+// --> 200: { crewmember data (passwordHash omitted, _id omitted, roleUid only with view permission) }
 // --> 403: { error: "Forbidden: Insufficient permissions" }
 // --> 404: { error: "Crew member not found" }
 // --> 500: { error: "Internal server error" }
 
-// PUT /api/settings/crew/crewmember?uuid=crewmemberUuid
+// PUT /api/settings/crew/crewmember?uid=crewmemberUid
 // Body: { update fields }
-// Own profile: requires 'manageOwnInformation' (roleUuid cannot be changed, mustChangePassword requires viewCrewMembers + manageCrewMembers)
+// Own profile: requires 'manageOwnInformation' (roleUid cannot be changed, mustChangePassword requires viewCrewMembers + manageCrewMembers)
 // Other profiles: requires 'viewCrewMembers' + 'manageCrewMembers'
 // mustChangePassword: only updatable with 'viewCrewMembers' + 'manageCrewMembers'
 // --> 200: { message: "Crew member updated successfully" }
@@ -36,7 +35,7 @@ import {
 // --> 500: { error: "Internal server error" }
 
 const SENSITIVE_FIELDS = ['passwordHash'] as const
-const ENCRYPTED_STRING_FIELDS = ['type', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'roleUuid'] as const
+const ENCRYPTED_STRING_FIELDS = ['type', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'roleUid'] as const
 const SERVER_MANAGED_FIELDS = ['createdAt', 'updatedAt'] as const
 
 function encryptIfPlain(value: string) {
@@ -76,8 +75,8 @@ function encryptUpdatePayload(updates: Record<string, unknown>) {
     return encryptedUpdates
 }
 
-function buildResponseMember(member: CrewMember, canViewRoleUuid: boolean, canViewMustChangePassword: boolean = false) {
-    const { _id, passwordHash, mustChangePassword, roleUuid, ...safe } = member as CrewMember & { _id?: unknown }
+function buildResponseMember(member: CrewMember, canViewRoleUid: boolean, canViewMustChangePassword: boolean = false) {
+    const { _id, passwordHash, mustChangePassword, roleUid, ...safe } = member as CrewMember & { _id?: unknown }
 
     // Decrypt encrypted fields before returning to client
     const decryptField = (value: any) => {
@@ -108,7 +107,7 @@ function buildResponseMember(member: CrewMember, canViewRoleUuid: boolean, canVi
                   validUntil: decryptField(lic.validUntil),
               }))
             : (safe as any).licenses,
-        ...(canViewRoleUuid ? { roleUuid: roleUuid } : {}),
+        ...(canViewRoleUid ? { roleUid: roleUid } : {}),
         ...(canViewMustChangePassword ? { mustChangePassword } : {}),
     }
 }
@@ -116,10 +115,20 @@ function buildResponseMember(member: CrewMember, canViewRoleUuid: boolean, canVi
 async function handler(req: ApiRequest, res: NextApiResponse) {
     requireMethod(req, res, ['GET', 'PUT'])
 
-    const uuid = getUuidFromQuery(req.query.uuid)
-    const userUuid = req.user!.uuid
+    const userUid = req.user!.uid
+    const queryUid = typeof req.query.uid === 'string'
+        ? req.query.uid
+        : Array.isArray(req.query.uid)
+            ? req.query.uid[0]
+            : undefined
+    const uid = queryUid || userUid
+
+    if (!uid) {
+        throw new BadRequestError('uid is required')
+    }
+
     const userPermissions = req.user!.permissions
-    const isOwnProfile = uuid === userUuid
+    const isOwnProfile = uid === userUid
 
     const hasWildcard = userPermissions.includes('*')
     const canViewOthers = hasWildcard || userPermissions.includes('viewCrewMembers')
@@ -133,7 +142,13 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
 
         const client = await clientPromise
         const db = client.db('settings')
-        const member = await db.collection<CrewMember>('crewmembers').findOne({ uuid })
+        const encryptedUid = encryptIfPlain(uid)
+        let member = await db.collection<CrewMember>('crewmembers').findOne({ uid: encryptedUid })
+
+        // Backward-compatible fallback for rows where uid is stored plain.
+        if (!member && encryptedUid !== uid) {
+            member = await db.collection<CrewMember>('crewmembers').findOne({ uid })
+        }
 
         if (!member) {
             throw new NotFoundError('Crew member not found')
@@ -164,8 +179,8 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
             throw new ForbiddenError('Missing required permissions to update mustChangePassword: viewCrewMembers and manageCrewMembers')
         }
 
-        if (isOwnProfile && Object.prototype.hasOwnProperty.call(updates, 'roleUuid')) {
-            delete updates.roleUuid; // Remove roleUuid for self-updates
+        if (isOwnProfile && Object.prototype.hasOwnProperty.call(updates, 'roleUid')) {
+            delete updates.roleUid; // Remove roleUid for self-updates
         }
 
         const clientUpdates = { ...(updates as Record<string, unknown>) }
@@ -180,10 +195,18 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
 
         const client = await clientPromise
         const db = client.db('settings')
-        const result = await db.collection<CrewMember>('crewmembers').updateOne(
-            { uuid },
+        const encryptedUid = encryptIfPlain(uid)
+        let result = await db.collection<CrewMember>('crewmembers').updateOne(
+            { uid: encryptedUid },
             { $set: { ...encryptedUpdates, updatedAt: new Date() } }
         )
+
+        if (result.matchedCount === 0 && encryptedUid !== uid) {
+            result = await db.collection<CrewMember>('crewmembers').updateOne(
+                { uid },
+                { $set: { ...encryptedUpdates, updatedAt: new Date() } }
+            )
+        }
 
         if (result.matchedCount === 0) {
             throw new NotFoundError('Crew member not found')

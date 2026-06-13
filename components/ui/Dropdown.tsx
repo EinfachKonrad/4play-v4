@@ -2,13 +2,13 @@ import { ChevronDown } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 
 interface DropdownProps {
-    name: string
     options: Array<{
         label: string
         value: string
     }>
     className?: string
-    onSelect: (value: string) => void
+    onSelect?: (value: string) => void
+    onChange?: (value: string) => void
     searchable?: boolean
     value?: string
     onInputChange?: (value: string) => void
@@ -16,7 +16,7 @@ interface DropdownProps {
     placeholder?: string
 }
 
-export default function Dropdown({ name, options, onSelect, className, searchable = false, value, onInputChange, allowCustom = false, placeholder }: DropdownProps ) {
+export default function Dropdown({ options, onSelect, onChange, className, searchable = false, value, onInputChange, allowCustom = false, placeholder }: DropdownProps ) {
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState(value ?? '')
     const rootRef = useRef<HTMLDivElement | null>(null)
@@ -42,13 +42,19 @@ export default function Dropdown({ name, options, onSelect, className, searchabl
     }, [])
 
     useEffect(() => {
-        if (typeof value === 'string') setInputValue(value)
-    }, [value])
+        if (typeof value === 'string') {
+            const selectedOption = options.find(o => o.value === value)
+            setInputValue(selectedOption?.label ?? value)
+        }
+    }, [value, options])
 
     const filtered = searchable && inputValue ? options.filter(o => o.label.toLowerCase().includes(inputValue.toLowerCase())) : options
 
     function handleSelect(optValue: string, optLabel?: string) {
-        onSelect(optValue)
+        const selectHandler = typeof onSelect === 'function' ? onSelect : (typeof onChange === 'function' ? onChange : undefined)
+        if (selectHandler) {
+            selectHandler(optValue)
+        }
         setInputValue(optLabel ?? optValue)
         if (onInputChange) onInputChange(optLabel ?? optValue)
         setOpen(false)
@@ -78,7 +84,7 @@ export default function Dropdown({ name, options, onSelect, className, searchabl
                             setOpen(true)
                         }}
                         onKeyDown={handleKey}
-                        placeholder={placeholder ?? name}
+                        placeholder={placeholder}
                         className="bg-transparent w-full"
                     />
                     <button type="button" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(o => !o)}>
@@ -93,7 +99,7 @@ export default function Dropdown({ name, options, onSelect, className, searchabl
                     onClick={() => setOpen(o => !o)}
                     className={`cursor-pointer inline-flex items-center justify-between w-full border-b m-2 ${className}`}
                 >
-                    {name}
+                    {options.find(o => o.value === value)?.label ?? <span className="text-neutral-500">{placeholder}</span>}
                     <ChevronDown className='h-4 w-4' />
                 </button>
             )}

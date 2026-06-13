@@ -1,15 +1,16 @@
-import { type DefaultSession, type DefaultUser } from "next-auth"
+import { type DefaultSession } from "next-auth"
 import { type JWT as DefaultJWT } from "next-auth/jwt"
+import type { User as DefaultUser } from "next-auth"
 
 type CrewType = "internal" | "external"
 
 declare module "next-auth" {
-  interface User extends DefaultUser {
+  interface User {
     type?: CrewType
     firstName?: string
     lastName?: string
-    uuid?: string
-    roleUuid?: string
+    uid?: string
+    roleUid?: string
     mustChangePassword?: boolean
     permissions?: string[]
   }
@@ -19,6 +20,8 @@ declare module "next-auth" {
       type?: CrewType
       firstName?: string
       lastName?: string
+      uid?: string
+      roleUid?: string
       mustChangePassword?: boolean
       permissions?: string[]
     } & DefaultSession["user"]
@@ -26,12 +29,12 @@ declare module "next-auth" {
 }
 
 declare module "next-auth/jwt" {
-  interface JWT extends DefaultJWT {
+  interface JWT {
     type?: CrewType
     firstName?: string
     lastName?: string
-    uuid?: string
-    roleUuid?: string
+    uid?: string
+    roleUid?: string
     mustChangePassword?: boolean
     permissions?: string[]
   }

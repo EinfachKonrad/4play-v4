@@ -36,7 +36,7 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
     const [skillSuggestions, setSkillSuggestions] = useState<string[]>([])
     const skillFetchTimeout = useRef<number | null>(null)
     const { data: session } = useSession()
-    const [roles, setRoles] = useState<Array<{ uuid: string; name: string }>>([])
+    const [roles, setRoles] = useState<Array<{ uid: string; name: string }>>([])
 
     const fetchLicenseNames = async (type?: string) => {
         if (!type) return []
@@ -122,7 +122,7 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
         e.preventDefault()
         try {
             const payload = { ...member }
-            const res = await fetch('/api/crew/crewmember?uuid=' + member.uuid, {
+            const res = await fetch('/api/crew/crewmember?uid=' + member.uid, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                                     <div className='w-full'>
                                         <label className='text-sm text-gray-400'>Interne/Externe Person</label>
                                         <Dropdown
-                                            name={member.type === 'internal' ? 'Intern' : 'Extern'}
+                                            placeholder="Interne/Externe Person"
                                             options={[
                                                 { label: 'Intern', value: 'internal' },
                                                 { label: 'Extern', value: 'external' },
@@ -273,11 +273,11 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                                 <div className='flex flex-col gap-2'>
                                     {
                                        member.licenses?.map((license, index) => (
-                                            <div key={license.uuid} className='flex gap-2'>
+                                            <div key={license.uid} className='flex gap-2'>
                                                 <div className='w-full'>
                                                     <label className='text-sm text-gray-400'>Art der Lizenz</label>
                                                     <Dropdown
-                                                        name={license.type ? (licenseOptions.find(o => o.value === license.type)?.label ?? license.type) : 'Art der Lizenz'}
+                                                        placeholder='Art der Lizenz'
                                                         options={licenseOptions}
                                                         onSelect={(value) => {
                                                             const updatedLicenses = [...(member.licenses ?? [])];
@@ -292,7 +292,6 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                                                 <div className='w-full'>
                                                     <label className='text-sm text-gray-400'>Name der Lizenz</label>
                                                     <Dropdown
-                                                        name={license.name || 'Name der Lizenz'}
                                                         options={(license.type ? (suggestionsByType[license.type] ?? []) : []).map(s => ({ label: s, value: s }))}
                                                         searchable={true}
                                                         value={license.name ?? ''}
@@ -330,7 +329,7 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                                     }
                                     <Button onClick={() => {    
                                         const newLicense = {
-                                            uuid: uuidv4(),
+                                            uid: uuidv4(),
                                             type: 'other' as const,
                                             name: '',
                                             validUntil: undefined,
@@ -368,8 +367,8 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                     },
                     ]
 
-                    if (session?.user?.uuid !== member.uuid) {
-                        const selectedRoleName = roles.find(r => r.uuid === member.roleUuid)?.name ?? ''
+                    if (session?.user?.uid !== member.uid) {
+                        const selectedRoleName = roles.find(r => r.uid === member.roleUid)?.name ?? ''
                         const roleTab = {
                             id: 'role',
                             label: 'Rolle & Berechtigungen',
@@ -377,11 +376,10 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                                 <div className='flex flex-col gap-4'>
                                     <p className='text-sm text-gray-400'>Hier kannst du die Rolle dieses Crew-Mitglieds verwalten, um dessen Berechtigungen im System zu steuern.</p>
                                     <Dropdown
-                                        name={selectedRoleName || 'Rolle wählen'}
-                                        options={roles.map(r => ({ label: r.name, value: r.uuid }))}
-                                        value={selectedRoleName}
-                                        onSelect={(value) => setMember({ ...member, roleUuid: value })}
                                         placeholder='Rolle wählen'
+                                        options={roles.map(r => ({ label: r.name, value: r.uid }))}
+                                        value={selectedRoleName}
+                                        onSelect={(value) => setMember({ ...member, roleUid: value })}
                                     />
                                 </div>
                             )
@@ -390,7 +388,7 @@ export default function EditCrewMemberModal({ onClose, ...initialMember }: EditC
                         baseTabs.push(roleTab)
                     }
 
-                    if (session?.user?.uuid !== member.uuid) {
+                    if (session?.user?.uid !== member.uid) {
                         const dangerTab = {
                             id: 'danger',
                             label: 'Löschen & Sperren',

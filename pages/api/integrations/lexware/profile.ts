@@ -1,20 +1,20 @@
 import { NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
-import Company from '@/types/settings/company'
-import { decryptData } from '@/lib/encryprion'
+import Company from '@/types/settings/branding'
+import { decryptData, encryptData } from '@/lib/encryprion'
 import {
     ApiRequest,
     BadRequestError,
     NotFoundError,
     requireMethod,
     withApi,
-    getUuidFromQuery,
+    getUidFromQuery,
 } from '@/lib/middleware'
 
-// GET /api/integrations/lexware/profile?uuid=companyUuid
-// --> 200: { organizationId, companyName, taxType, smallBusiness }
+// GET /api/integrations/lexware/profile?uid=brandingUid
+// --> 200: { organizationId, brandingName, taxType, smallBusiness }
 // --> 404: { error: "Company configuration not found" }
-// --> 400: { error: "Lexware integration is not enabled for this company" }
+// --> 400: { error: "Lexware integration is not enabled for this branding" }
 // --> 400: { error: "API key for Lexware integration is not set" }
 // --> 500: { error: "Failed to fetch Lexware profile" }
 // --> 500: { error: "Internal server error" }
@@ -49,24 +49,24 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     requireMethod(req, res, ['GET'])
 
     try {
-        const uuid = getUuidFromQuery(req.query.uuid)
+        const uid = getUidFromQuery(req.query.uid)
         const client = await clientPromise
         const db = client.db('settings')
-        const company = await db.collection<Company>('company').findOne({ uuid })
+        const branding = await db.collection<Company>('brandings').findOne({ uid: encryptData(uid) })
 
-        if (!company) {
+        if (!branding) {
             throw new NotFoundError('Company configuration not found')
         }
 
-        if (!company.lexware.enabled) {
-            throw new BadRequestError('Lexware integration is not enabled for this company')
+        if (!branding.integrations.lexware.enabled) {
+            throw new BadRequestError('Lexware integration is not enabled for this branding')
         }
 
-        if (!company.lexware.apiKey) {
+        if (!branding.integrations.lexware.apiKey) {
             throw new BadRequestError('API key for Lexware integration is not set')
         }
 
-        const profile = await fetchLexwareProfile(decryptData(company.lexware.apiKey))
+        const profile = await fetchLexwareProfile(decryptData(branding.integrations.lexware.apiKey))
         return res.status(200).json(profile)
     } catch (error) {
         console.error('[lexwareIntegration] Failed to fetch Lexware profile:', error)

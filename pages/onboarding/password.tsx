@@ -43,7 +43,7 @@ function OnboardingSetPasswordPage() {
         }
 
         try {
-            const res = await fetch('/api/crew/crewmember/password?uuid=' + session?.user?.uuid, {
+            const res = await fetch('/api/crew/crewmember/password?id=' + session?.user?.id, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

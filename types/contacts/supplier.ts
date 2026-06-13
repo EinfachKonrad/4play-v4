@@ -1,6 +1,6 @@
 export default interface Supplier {
-    uuid: string; // supplier uuid (su-xxx)
-    companyUuid?: string; // company uuid (c-xxx) that the supplier belongs to
+    uid: string; // supplier uid (su-xxx)
+    companyUid?: string; // company uid (c-xxx) that the supplier belongs to
 
     name: string;
 
@@ -30,8 +30,10 @@ export default interface Supplier {
         phone?: string;
     }>;
 
-    lexware?: Array<{  // only for suppliers that are linked to a lexware supplier, used for synchronizing supplier data with lexware
-        companyUuid: string;   // company uuid (c-xxx) that the lexware supplier belongs to
-        supplierId: string;   // supplier id in lexware (e.g. "S12345")
-    }>;
+    integrations?: {
+        lexware?: Array<{  // only for suppliers that are linked to a lexware supplier, used for synchronizing supplier data with lexware
+            companyUid: string;   // company uid (c-xxx) that the lexware supplier belongs to
+            supplierUid: string;   // supplier uid in lexware (e.g. "S12345")
+        }>
+    };
 }

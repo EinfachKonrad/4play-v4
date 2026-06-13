@@ -1,15 +1,16 @@
 import Appointment from '@/types/calendar/appointment'
 import { decryptData, encryptData } from '@/lib/encryprion'
-import { ApiRequest, BadRequestError, getUuidFromQuery, requireMethod, withApi } from '@/lib/middleware'
+import { ApiRequest, BadRequestError, getUidFromQuery, requireMethod, withApi } from '@/lib/middleware'
 import clientPromise from "@/lib/mongodb";
 import { NextApiResponse } from "next";
-import { randomUUID } from 'crypto'
+import { v4 as uuidv4 } from "uuid";
+
 
 // GET /api/calendar/appointments - Get all appointments
-// GET /api/calendar/appointments?uuid= - Get appointment by UUID
+// GET /api/calendar/appointments?uid= - Get appointment by uid
 // POST /api/calendar/appointments - Create a new appointment
-// PUT/PATCH /api/calendar/appointments?uuid= - Update an existing appointment by UUID
-// DELETE /api/calendar/appointments?uuid= - Delete an appointment by UUID
+// PUT/PATCH /api/calendar/appointments?uid= - Update an existing appointment by uid
+// DELETE /api/calendar/appointments?uid= - Delete an appointment by uid
 
 type RepeatUnit = NonNullable<Appointment['repeat']>['unit']
 type StoredAppointment = Omit<Appointment, 'date' | 'repeat'> & {
@@ -22,12 +23,17 @@ type StoredAppointment = Omit<Appointment, 'date' | 'repeat'> & {
         endDate?: Date | string
     }
     title?: string
-    createdAt?: Date
-    updatedAt?: Date
+
+    history: Array<{
+        date: Date;
+        event: string;
+        description?: string;
+        updatedBy: string;
+    }>;
 }
 
 const REPEAT_UNITS: RepeatUnit[] = ['day', 'week', 'month', 'year']
-const ENCRYPTED_STRING_FIELDS = ['uuid', 'eventUuid', 'name', 'description', 'location'] as const
+const ENCRYPTED_STRING_FIELDS = ['uid', 'eventUid', 'name', 'description', 'location'] as const
 
 function encryptIfPlain(value: string) {
     const decrypted = decryptData(value)
@@ -105,18 +111,18 @@ function parseCrew(crew: unknown) {
     }
 
     return crew.map((member, index) => {
-        if (!member || typeof member !== 'object' || Array.isArray(member) || typeof (member as { uuid?: unknown }).uuid !== 'string') {
-            throw new BadRequestError(`Crew entry at index ${index} must contain a uuid`)
+        if (!member || typeof member !== 'object' || Array.isArray(member) || typeof (member as { uid?: unknown }).uid !== 'string') {
+            throw new BadRequestError(`Crew entry at index ${index} must contain a uid`)
         }
 
         return {
-            uuid: (member as { uuid: string }).uuid,
+            uid: (member as { uid: string }).uid,
         }
     })
 }
 
-function buildQueryByUuid(uuid: string) {
-    return { uuid: { $in: [uuid, encryptIfPlain(uuid)] } }
+function buildQueryByUid(uid: string) {
+    return { uid: { $in: [uid, encryptIfPlain(uid)] } }
 }
 
 function encryptAppointment(appointment: Appointment): StoredAppointment {
@@ -134,8 +140,17 @@ function encryptAppointment(appointment: Appointment): StoredAppointment {
               }
             : undefined,
         crew: appointment.crew?.map((member) => ({
-            uuid: member.uuid,
+            uid: member.uid,
         })),
+        history: [
+            ...(appointment as StoredAppointment).history,
+            {
+                date: new Date(),
+                event: 'updated',
+                description: `data provided: ${JSON.stringify(appointment)}`,
+                updatedBy: '',
+            },
+        ],
     }
     const encryptedRecord = encryptedAppointment as unknown as Record<string, unknown>
 
@@ -150,12 +165,12 @@ function encryptAppointment(appointment: Appointment): StoredAppointment {
 }
 
 function buildResponseAppointment(appointment: StoredAppointment & { _id?: unknown }): Appointment {
-    const { _id, title, createdAt, updatedAt, ...safe } = appointment
+    const { _id, title, history, ...safe } = appointment
     const fallbackName = typeof safe.name === 'string' ? safe.name : title
 
     return {
-        uuid: String(decryptField(safe.uuid)),
-        ...(safe.eventUuid ? { eventUuid: String(decryptField(safe.eventUuid)) } : {}),
+        uid: String(decryptField(safe.uid)),
+        ...(safe.eventUid ? { eventUid: String(decryptField(safe.eventUid)) } : {}),
         name: typeof fallbackName === 'string' ? String(decryptField(fallbackName)) : '',
         description: typeof safe.description === 'string' ? String(decryptField(safe.description)) : '',
         location: typeof safe.location === 'string' ? String(decryptField(safe.location)) : '',
@@ -176,7 +191,7 @@ function buildResponseAppointment(appointment: StoredAppointment & { _id?: unkno
         ...(Array.isArray(safe.crew)
             ? {
                   crew: safe.crew.map((member) => ({
-                      uuid: String(decryptField(member.uuid)),
+                      uid: String(decryptField(member.uid)),
                   })),
               }
             : {}),
@@ -201,13 +216,13 @@ function parseAppointmentBody(body: unknown, requireName = false): Partial<Appoi
         throw new BadRequestError('Appointment name is required')
     }
 
-    if (Object.prototype.hasOwnProperty.call(input, 'eventUuid')) {
-        if (input.eventUuid == null || input.eventUuid === '') {
-            parsed.eventUuid = undefined
-        } else if (typeof input.eventUuid === 'string') {
-            parsed.eventUuid = input.eventUuid.trim()
+    if (Object.prototype.hasOwnProperty.call(input, 'eventUid')) {
+        if (input.eventUid == null || input.eventUid === '') {
+            parsed.eventUid = undefined
+        } else if (typeof input.eventUid === 'string') {
+            parsed.eventUid = input.eventUid.trim()
         } else {
-            throw new BadRequestError('eventUuid must be a string')
+            throw new BadRequestError('eventUid must be a string')
         }
     }
 
@@ -257,9 +272,9 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     const db = client.db('calendar')
 
 	if (req.method === 'GET') {
-        const { uuid } = req.query
-        if (uuid) {
-            const appointment = await db.collection<StoredAppointment>('appointments').findOne(buildQueryByUuid(getUuidFromQuery(uuid)))
+        const { uid } = req.query
+        if (uid) {
+            const appointment = await db.collection<StoredAppointment>('appointments').findOne(buildQueryByUid(getUidFromQuery(uid)))
             if (!appointment) {
                 return res.status(404).json({ error: 'Appointment not found' })
             }
@@ -273,12 +288,12 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
         const payload = parseAppointmentBody(req.body, true)
         const newAppointment: Appointment = {
-            uuid: `a-${randomUUID()}`,
+            uid: uuidv4(),
             name: payload.name!,
             description: payload.description ?? '',
             location: payload.location ?? '',
             date: payload.date!,
-            ...(payload.eventUuid ? { eventUuid: payload.eventUuid } : {}),
+            ...(payload.eventUid ? { eventUid: payload.eventUid } : {}),
             ...(payload.repeat ? { repeat: payload.repeat } : {}),
             ...(payload.crew ? { crew: payload.crew } : {}),
         }
@@ -286,13 +301,21 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
         const encryptedAppointment = {
             ...encryptAppointment(newAppointment),
             createdAt: new Date(),
+            history: [
+                {
+                    date: new Date(),
+                    event: 'Appointment created',
+                    description: `data provided: ${JSON.stringify(payload)}`,
+                    updatedBy: req.user?.uid ?? '',
+                },
+            ],
         }
         await db.collection<StoredAppointment>('appointments').insertOne(encryptedAppointment)
         return res.status(201).json(newAppointment)
     }
 
     if (['PUT', 'PATCH'].includes(req.method!)) {
-        const uuid = getUuidFromQuery(req.query.uuid)
+        const uid = getUidFromQuery(req.query.uid)
         const payload = parseAppointmentBody(req.body)
         const updateData: Partial<Appointment> = {}
         const unsetData: Record<string, ''> = {}
@@ -310,11 +333,11 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
         if (Object.prototype.hasOwnProperty.call(payload, 'date')) {
             updateData.date = payload.date
         }
-        if (Object.prototype.hasOwnProperty.call(payload, 'eventUuid')) {
-            if (payload.eventUuid) {
-                updateData.eventUuid = payload.eventUuid
+        if (Object.prototype.hasOwnProperty.call(payload, 'eventUid')) {
+            if (payload.eventUid) {
+                updateData.eventUid = payload.eventUid
             } else {
-                unsetData.eventUuid = ''
+                unsetData.eventUid = ''
             }
         }
         if (Object.prototype.hasOwnProperty.call(payload, 'repeat')) {
@@ -335,12 +358,12 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
         const updateOperation: { $set: Record<string, unknown>; $unset?: Record<string, ''> } = {
             $set: {
                 ...encryptAppointment({
-                    uuid,
+                    uid,
                     name: updateData.name ?? '',
                     description: updateData.description ?? '',
                     location: updateData.location ?? '',
                     date: updateData.date ?? { start: new Date(), end: new Date() },
-                    ...(updateData.eventUuid ? { eventUuid: updateData.eventUuid } : {}),
+                    ...(updateData.eventUid ? { eventUid: updateData.eventUid } : {}),
                     ...(updateData.repeat ? { repeat: updateData.repeat } : {}),
                     ...(updateData.crew ? { crew: updateData.crew } : {}),
                 }),
@@ -348,12 +371,12 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
             },
         }
 
-        delete updateOperation.$set.uuid
+        delete updateOperation.$set.uid
         if (!Object.prototype.hasOwnProperty.call(updateData, 'name')) delete updateOperation.$set.name
         if (!Object.prototype.hasOwnProperty.call(updateData, 'description')) delete updateOperation.$set.description
         if (!Object.prototype.hasOwnProperty.call(updateData, 'location')) delete updateOperation.$set.location
         if (!Object.prototype.hasOwnProperty.call(updateData, 'date')) delete updateOperation.$set.date
-        if (!Object.prototype.hasOwnProperty.call(updateData, 'eventUuid')) delete updateOperation.$set.eventUuid
+        if (!Object.prototype.hasOwnProperty.call(updateData, 'eventUid')) delete updateOperation.$set.eventUid
         if (!Object.prototype.hasOwnProperty.call(updateData, 'repeat')) delete updateOperation.$set.repeat
         if (!Object.prototype.hasOwnProperty.call(updateData, 'crew')) delete updateOperation.$set.crew
 
@@ -365,7 +388,7 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
             throw new BadRequestError('No valid fields provided for update')
         }
 
-        const result = await db.collection<StoredAppointment>('appointments').updateOne(buildQueryByUuid(uuid), updateOperation)
+        const result = await db.collection<StoredAppointment>('appointments').updateOne(buildQueryByUid(uid), updateOperation)
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: 'Appointment not found' })
         }
@@ -373,8 +396,8 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     }
 
     if (req.method === 'DELETE') {
-        const uuid = getUuidFromQuery(req.query.uuid)
-        const result = await db.collection<StoredAppointment>('appointments').deleteOne(buildQueryByUuid(uuid))
+        const uid = getUidFromQuery(req.query.uid)
+        const result = await db.collection<StoredAppointment>('appointments').deleteOne(buildQueryByUid(uid))
         if (result.deletedCount === 0) {
             return res.status(404).json({ error: 'Appointment not found' })
         }

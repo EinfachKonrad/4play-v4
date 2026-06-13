@@ -7,7 +7,7 @@ import { getSession } from './auth';
 
 export interface ApiRequest extends NextApiRequest {
   user?: {
-    uuid: string;
+    uid: string;
     email: string;
     name?: string;
     permissions: string[];
@@ -95,7 +95,7 @@ export interface MiddlewareOptions {
   permissionMode?: 'all' | 'any';
   /** Method-specific permission mode; falls back to permissionMode */
   permissionModeByMethod?: Record<string, 'all' | 'any'>;
-  /** Optional roleUuid gate in addition to permissions */
+  /** Optional roleUid gate in addition to permissions */
   allowWildcardPermission?: boolean;
   /** Whether authentication is optional (for public endpoints) */
   optionalAuth?: boolean;
@@ -198,14 +198,14 @@ export function withApi(
       }
 
       if (session) {
-        const userUuid: string = (session.user as any)?.uuid || '';
+        const userUid: string = (session.user as any)?.uid || '';
         const userPermissions: string[] = Array.isArray((session.user as any)?.permissions)
           ? (session.user as any).permissions.filter((value: unknown): value is string => typeof value === 'string')
           : [];
         const userMustChangePassword: boolean = Boolean((session.user as any)?.mustChangePassword);
 
         req.user = {
-          uuid: userUuid,
+          uid: userUid,
           email: session.user?.email || '',
           name: session.user?.name ?? undefined,
           permissions: userPermissions,
@@ -268,9 +268,9 @@ export function requireBodyFields(
 }
 
 
-export function getUuidFromQuery(query: string | string[] | undefined): string {
+export function getUidFromQuery(query: string | string[] | undefined): string {
   if (!query) {
-    throw new BadRequestError('UUID is required');
+    throw new BadRequestError('uid is required');
   }
   return Array.isArray(query) ? query[0] : query;
 }

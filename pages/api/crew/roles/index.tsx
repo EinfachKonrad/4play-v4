@@ -10,7 +10,7 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     const db = client.db('settings')
     const roles = await db.collection('roles').find().toArray()
     return res.status(200).json(roles.map(role => ({
-        uuid: role.uuid,
+        uid: role.uid,
         name: decryptData(role.name),
     })))
 

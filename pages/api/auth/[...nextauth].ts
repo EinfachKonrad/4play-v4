@@ -56,19 +56,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         console.log('[NextAuth] User from DB:', {
           email,
-          uuid: user.uuid,
-          role: user.roleUuid,
+          uid: user.uid,
+          role: user.roleUid,
           mustChangePassword: user.mustChangePassword
         })
 
         return {
-          id: user._id.toString(),
           email,
           type: typeof user.type === "string" ? decryptData(user.type) : user.type,
           firstName: typeof user.firstName === "string" ? decryptData(user.firstName) : user.firstName,
           lastName: typeof user.lastName === "string" ? decryptData(user.lastName) : user.lastName,
-          uuid: typeof user.uuid === "string" ? decryptData(user.uuid) : user.uuid,
-          roleUuid: typeof user.roleUuid === "string" ? decryptData(user.roleUuid) : "crew",
+          uid: typeof user.uid === "string" ? decryptData(user.uid) : user.uid,
+          roleUid: typeof user.roleUid === "string" ? decryptData(user.roleUid) : "crew",
           mustChangePassword: user.mustChangePassword || false,
         }
       },
@@ -76,33 +75,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // Add UUID, role, and mustChangePassword to token when user signs in
+      // Add uid, role, and mustChangePassword to token when user signs in
       if (user) {
         token.type = user.type
         token.firstName = user.firstName
         token.lastName = user.lastName
-        token.uuid = user.uuid
-        token.roleUuid = user.roleUuid
+        token.uid = user.uid
+        token.roleUid = user.roleUid
         token.mustChangePassword = user.mustChangePassword
 
         // Fetch and embed permissions at login time so no API route is needed later
-        if (typeof user.uuid === "string" && user.uuid.length > 0) {
+        if (typeof user.uid === "string" && user.uid.length > 0) {
           try {
             const client = await clientPromise
             const db = client.db("settings")
-            // user.roleUuid is already decrypted (from authorize); additional roles in the DB are encrypted
-            const dbUser = await db.collection("crewmembers").findOne({ uuid: encryptData(user.uuid) })
+            // user.roleUid is already decrypted (from authorize); additional roles in the DB are encrypted
+            const dbUser = await db.collection("crewmembers").findOne({ uid: encryptData(user.uid) })
             const extraRoles: string[] = dbUser && Array.isArray(dbUser.roles)
               ? dbUser.roles
                   .filter((r: unknown): r is string => typeof r === "string" && r.length > 0)
                   .map((r: string) => { try { return decryptData(r) } catch { return r } })
               : []
             const roleIds = [
-              typeof user.roleUuid === "string" && user.roleUuid.length > 0 ? user.roleUuid : null,
+              typeof user.roleUid === "string" && user.roleUid.length > 0 ? user.roleUid : null,
               ...extraRoles,
-            ].filter((id): id is string => id !== null)
+            ].filter((uid): uid is string => uid !== null)
             if (roleIds.length > 0) {
-              const roles = await db.collection<Role>("roles").find({ uuid: { $in: roleIds } }).toArray()
+              const roles = await db.collection<Role>("roles").find({ uid: { $in: roleIds } }).toArray()
               const perms = new Set<string>()
               roles.forEach(role => role.permissions.forEach(p => perms.add(p)))
               token.permissions = Array.from(perms)
@@ -121,8 +120,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           type: token.type,
           firstName: token.firstName,
           lastName: token.lastName,
-          uuid: token.uuid,
-          roleUuid: token.roleUuid,
+          uid: token.uid,
+          roleUid: token.roleUid,
           mustChangePassword: token.mustChangePassword,
           permissions: token.permissions
         })
@@ -130,27 +129,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      // Add UUID, role, and mustChangePassword to session
+      // Add uid, role, and mustChangePassword to session
       if (session?.user) {
         const tokenMustChangePassword = parseMustChangePassword((token as { mustChangePassword?: unknown }).mustChangePassword)
         session.user.type = token.type
         session.user.firstName = token.firstName
         session.user.lastName = token.lastName
-        session.user.uuid = token.uuid
+        session.user.uid = token.uid
         session.user.mustChangePassword = tokenMustChangePassword
         session.user.permissions = token.permissions ?? []
         // Always fetch fresh mustChangePassword value from DB to ensure it's up-to-date
         // This is important after password changes
-        if (typeof token.uuid === "string" && token.uuid.length > 0) {
+        if (typeof token.uid === "string" && token.uid.length > 0) {
           try {
             const client = await clientPromise
             const db = client.db("settings")
-            const encryptedUuid = encryptData(token.uuid)
-            let user = await db.collection("crewmembers").findOne({ uuid: encryptedUuid })
+            const encryptedUid = encryptData(token.uid)
+            let user = await db.collection("crewmembers").findOne({ uid: encryptedUid })
 
-            // Backward-compatible fallback for legacy rows where uuid is not encrypted.
+            // Backward-compatible fallback for legacy rows where uid is not encrypted.
             if (!user) {
-              user = await db.collection("crewmembers").findOne({ uuid: token.uuid })
+              user = await db.collection("crewmembers").findOne({ uid: token.uid })
             }
             
             if (user) {
@@ -169,7 +168,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             type: session.user.type,
             firstName: session.user.firstName,
             lastName: session.user.lastName,
-            uuid: session.user.uuid,
+            uid: session.user.uid,
             mustChangePassword: session.user.mustChangePassword,
             permissions: session.user.permissions
           })

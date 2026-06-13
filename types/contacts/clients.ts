@@ -1,11 +1,11 @@
 export default interface Client {
-    uuid: string; // client uuid (cl-xxx)
-    companyUuid?: string; // company uuid (c-xxx) that the client belongs to
+    uid: string; // client uid
+    companyUid?: string; // company uid that the client belongs to
 
     name: string;
 
     address?: Array<{
-        type: string;   // address type (e.g. "billing", "shipping", etc.)
+        type: string;   // address type (e.g. "general", "billing", "shipping", etc.)
         street: string;
         postalCode: string;
         city: string;
@@ -30,8 +30,16 @@ export default interface Client {
         phone?: string;
     }>;
 
-    lexware?: Array<{  // only for clients that are linked to a lexware client, used for synchronizing client data with lexware
-        companyUuid: string;   // company uuid (c-xxx) that the lexware client belongs to
-        clientId: string;   // client id in lexware (e.g. "K12345")
+    integrations?: {
+        lexware?: Array<{  // only for clients that are linked to a lexware client, used for synchronizing client data with lexware
+            companyUid: string;   // company uid that the lexware client belongs to
+            clientUid  : string;   // client uid in lexware
+        }>
+    };
+
+    history: Array<{
+        date: Date;
+        event: string;   // event type (e.g. "created", "updated", "deleted", etc.)
+        updatedBy: string; // uid of the user who performed the action
     }>;
 }

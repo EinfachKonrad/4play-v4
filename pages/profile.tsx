@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react'
 
 function profilePage() {
     const [user, setUser] = useState<CrewMember>({} as CrewMember)
-    const { data: session } = useSession()
+    const { data: session, status } = useSession()
     const instanceConfig = useInstanceConfig();
     const [showMessage, setShowMessage] = useState(false)
     const [showPasswordChangeMessage, setShowPasswordChangeMessage] = useState(false)
@@ -24,9 +24,10 @@ function profilePage() {
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
 
-    async function fetchUser() {
+    async function fetchUser(uid?: string) {
         try {
-            const res = await fetch('/api/crew/crewmember?uuid=' + session?.user?.uuid)
+            const query = uid ? `?uid=${encodeURIComponent(uid)}` : ''
+            const res = await fetch('/api/crew/crewmember' + query)
             if (!res.ok) {
                 throw new Error(`Error fetching user: ${res.statusText}`)
             }
@@ -38,15 +39,19 @@ function profilePage() {
     }
 
     useEffect(() => {
-        if (session?.user?.uuid) {
-            fetchUser().finally(() => setLoading(false))
+        if (status !== 'authenticated') {
+            return
         }
-    }, [session?.user?.uuid])
+
+        setLoading(true)
+        fetchUser(session?.user?.uid).finally(() => setLoading(false))
+    }, [status, session?.user?.uid])
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
-            const res = await fetch('/api/crew/crewmember?uuid=' + session?.user?.uuid, {
+            const query = session?.user?.uid ? `?uid=${encodeURIComponent(session.user.uid)}` : ''
+            const res = await fetch('/api/crew/crewmember' + query, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -74,7 +79,8 @@ function profilePage() {
         }
 
         try {
-            const res = await fetch('/api/crew/crewmember/password?uuid=' + session?.user?.uuid, {
+            const query = session?.user?.uid ? `?uid=${encodeURIComponent(session.user.uid)}` : ''
+            const res = await fetch('/api/crew/crewmember/password' + query, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

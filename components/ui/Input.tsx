@@ -12,9 +12,10 @@ interface InputProps {
     maxLength?: number
     defaultValue?: string
     checked?: boolean
+    disabled?: boolean
 }
 
-export default function Input({ value, onChange, onKeyDown, placeholder, type = 'text', id, className, required = false, maxLength, defaultValue, checked }: InputProps) {
+export default function Input({ value, onChange, onKeyDown, placeholder, type = 'text', id, className, required = false, maxLength, defaultValue, checked, disabled = false }: InputProps) {
   return (
     <input
       type={type}
@@ -23,11 +24,12 @@ export default function Input({ value, onChange, onKeyDown, placeholder, type = 
       onKeyDown={onKeyDown}
       placeholder={placeholder}
       id={id}
-      className={`border-b w-full m-2 ${type === 'checkbox' ? 'cursor-pointer' : ''} ${className}`}
+      className={`border-b w-full m-2 ${type === 'checkbox' ? 'cursor-pointer' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
       required={required}
       maxLength={maxLength}
       defaultValue={defaultValue}
       checked={checked}
+      disabled={disabled}
     />
   )
 }

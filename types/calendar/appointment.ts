@@ -1,7 +1,7 @@
 export default interface Appointment {
-    uuid: string; // appointment uuid (a-xxx)
+    uid: string; // appointment uid
 
-    eventUuid?: string; // event uuid (e-xxx) that the appointment is linked to
+    eventUid?: string; // event uid that the appointment is linked to
 
     name: string;
     description: string;
@@ -21,6 +21,6 @@ export default interface Appointment {
     }
     
     crew?: Array<{
-        uuid: string;   // crew member uuid (u-xxx)
+        uid: string;   // crew member uid
     }>;
 }

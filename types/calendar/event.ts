@@ -1,24 +1,24 @@
 export default interface Event {
-    uuid: string; // event uuid (e-xxx)
+    uid: string; // event uid (e-xxx)
 
-    companyUuid: string; // company uuid (c-xxx) that the event belongs to
-    clientUuid?: string;  // client uuid (cl-xxx) that the event belongs to (optional, can be left empty if the event is not associated with a specific client)
+    companyUid: string; // company uid (c-xxx) that the event belongs to
+    clientUid?: string;  // client uid (cl-xxx) that the event belongs to (optional, can be left empty if the event is not associated with a specific client)
 
     name: string;
     description: string;
 
     venue?: {
         name?: string; // venue name if edited or not selected from the list
-        uuid?: string;  // venue uuid (v-xxx) if selected from the list, otherwise it can be left empty and the name can be set to a custom value
+        uid?: string;  // venue uid (v-xxx) if selected from the list, otherwise it can be left empty and the name can be set to a custom value
     };
 
     projects: Array<{
-        uuid: string;
+        uid: string;
 
         name: string;
 
-        companyUuid?: string; // company uuid (c-xxx) if the project is associated with a different company than the main event, otherwise it can be left empty
-        clientUuid?: string; // client uuid (cl-xxx) if the project is associated with a different client than the main event, otherwise it can be left empty
+        companyUid?: string; // company uid (c-xxx) if the project is associated with a different company than the main event, otherwise it can be left empty
+        clientUid?: string; // client uid (cl-xxx) if the project is associated with a different client than the main event, otherwise it can be left empty
 
         dates: Array<{ // multiple date ranges can be added for a project, e.g. for a multi-day event with breaks in between
             start: string;
@@ -40,16 +40,16 @@ export default interface Event {
                     }
                 }
 
-                bookedEqipment: Array<{
-                    uuid: string;   // equipment uuid (b-xxx, i-xxx or t-xxx)
+                bookedEquipment: Array<{
+                    uid: string;   // equipment uid (b-xxx, i-xxx or t-xxx)
                     name?: string;   // equipment name if edited or text if it's a text line
                     quantity: number;   // quantity of the equipment booked (for text lines, it can be set to 0 to just be a comment or to any other number to look like a normal booking
-                    versionUuid?: string;   // version uuid (v-xxx) if the equipment has different versions and a specific version is booked
-                    optionalContent?: Array<string>;  // only for bundles, list of uuids of optional contents that are included in the booking
+                    versionUid?: string;   // version uid (v-xxx) if the equipment has different versions and a specific version is booked
+                    optionalContent?: Array<string>;  // only for bundles, list of uids of optional contents that are included in the booking
                     elements?: Array<{ // only for scanned equipment
-                        uuid: string;   // element uuid
+                        uid: string;   // element uid
                         status: "packed" | "checked" | "returned";   // element status (packed: commisioned in warehouse, checked: qc-ed on site after the event - ready to use, returned: returned to warehouse)
-                        updatedBy: string; // user uuid (u-xxx) who updated the status last time
+                        updatedBy: string; // user uid (u-xxx) who updated the status last time
                     }>
                 }>;
 
@@ -58,19 +58,19 @@ export default interface Event {
 
         crew: {
             positions?: Array<{
-                uuid: string;   // position uuid (p-xxx)
+                uid: string;   // position uid (p-xxx)
                 dates: Array<{
-                    uuid: string;   // date uuid (d-xxx)
+                    uid: string;   // date uid (d-xxx)
                     start: Date;  // date and time of the start of the position on that date
                     end: Date;    // date and time of the end of the position on that date
                     minCrew?: number;   // minimum number of crew members needed for the position on that date
                 }>
             }>;
             bookedCrew: Array<{
-                uuid: string;   // crew member uuid (u-xxx)
+                uid: string;   // crew member uid (u-xxx)
                 dates: Array<{
-                    dateUuid: string;   // date uuid (d-xxx) of the crew member's involvement in the project
-                    positionUuid?: string;    // crew member position uuid (p-xxx)
+                    dateUid: string;   // date uid (d-xxx) of the crew member's involvement in the project
+                    positionUid?: string;    // crew member position uid (p-xxx)
                 }>
             }>;
         }
@@ -89,14 +89,14 @@ export default interface Event {
             importCrew: boolean;    // if true, the crew booked for the project will be included in the cost calculation, otherwise it will be ignored (useful for projects that are not charged for crew, e.g. internal projects or projects with a fixed price)
 
             positions: Array<{
-                uuid: string;   // position uuid (p-xxx)
+                uid: string;   // position uid (p-xxx)
                 
                 name?: string;   // position name if edited or text if it's not linked to a specific equipment or crew role
                 category?: string;   // position category (e.g. Equipment, Crew, Planning, ...) if it's not linked to a specific equipment or crew role
 
                 linked?: {
                     type: "equipment" | "crew";   // type of the linked item (equipment or crew)
-                    uuid: string;   // uuid of the linked item (b-xxx, i-xxx, t-xxx for equipment or u-xxx for crew)
+                    uid: string;   // uid of the linked item (b-xxx, i-xxx, t-xxx for equipment or u-xxx for crew)
                 }
 
                 quantity: number;   // quantity of the position (for text lines, it can be set to 0 to just be a comment or to any other number to look like a normal position)

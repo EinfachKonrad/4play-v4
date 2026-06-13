@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { ChevronRight, Folder, type LucideIcon } from 'lucide-react'
 
 export type Item = {
-    uuid: string
+    id: string
     path: string
     name: string
     icon: LucideIcon
@@ -112,7 +112,7 @@ function renderFolder(
             {isExpanded && (
                 <div className={depth > 0 ? 'ml-6 flex flex-col gap-2' : 'flex flex-col gap-2'}>
                     {sortedItems.map(item => (
-                        <div key={item.uuid} className='flex items-center gap-2'>
+                        <div key={item.id} className='flex items-center gap-2'>
                             <item.icon className='h-4 w-4' />
                             <span>{item.name}</span>
                         </div>

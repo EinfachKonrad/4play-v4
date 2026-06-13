@@ -10,25 +10,29 @@ import React, { useEffect, useState } from 'react'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import licenses from '../api/crew/data/licenses'
+import LoadingText from '@/components/ui/LoadingText'
+import { useRouter } from 'next/router'
 
 function CrewPage() {
   interface CrewMember {
-    uuid: string
+    uid: string
     firstName: string
     lastName: string
     type: 'internal' | 'external'
     email: string
-    roleUuid: string
+    roleUid: string
     timeclock: any
     mustChangePassword?: boolean
     locked?: boolean
     licenses?: Array<{
-      uuid: string
+      uid: string
       type: 'firstAid' | 'driversLicense' | 'examination' | 'training' | 'other'
       name: string
       validUntil?: Date
     }>
   }
+
+  const router = useRouter()
 
   const [members, setMembers] = useState<CrewMember[]>([])
   const [view, setView] = useState<'internal' | 'external'>('internal')
@@ -42,6 +46,19 @@ function CrewPage() {
   const [tempPassword, setTempPassword] = useState<string | null>(null)
   const [reauthError, setReauthError] = useState<string | null>(null)
   const [displayCopySuccess, setDisplayCopySuccess] = useState(false)
+
+
+  useEffect(() => {
+        setView((router.query.view as typeof view) || 'internal')
+    }, [router.query.view])
+    
+    const handleViewChange = (newView: typeof view) => {
+      setView(newView)
+      router.push({
+          pathname: router.pathname,
+          query: { ...router.query, view: newView }
+      }, undefined, { shallow: true })
+    }
 
   async function fetchCrew() {
     try {
@@ -90,7 +107,7 @@ function CrewPage() {
     setResetting(true)
     setReauthError(null)
     try {
-      const res = await fetch('/api/crew/crewmember/reset?uuid=' + target.uuid, {
+      const res = await fetch('/api/crew/crewmember/reset?uid=' + target.uid, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminPassword }),
@@ -111,7 +128,6 @@ function CrewPage() {
   function closeTempModal() {
     setTempPassword(null)
     setTarget(null)
-    // refresh list so UI reflects mustChangePassword if needed
     fetchCrew()
   }
 
@@ -132,18 +148,21 @@ function CrewPage() {
               <span className='!p-0'>Neu</span>
             </Button>
         <Navbar items={[
-          { id: 'internal', name: 'Intern', onClick: () => setView('internal'), icon: House},
-          { id: 'external', name: 'Extern', onClick: () => setView('external'), icon: Folders, requiredPermission: 'viewExternalCrewMembers'},
+          { id: 'internal', name: 'Intern', onClick: () => handleViewChange('internal'), icon: House},
+          { id: 'external', name: 'Extern', onClick: () => handleViewChange('external'), icon: Folders, requiredPermission: 'viewExternalCrewMembers'},
         ]} activeItemId={view} />
         </div>
       </div>
+      <div className={`${loading ? 'overflow-hidden max-h-[calc(100vh-13.8rem)]' : ''}`}>
       {
-          <Table columns={[
-            { id: 'firstName', name: 'Vorname', sortable: true },
-            { id: 'lastName', name: 'Nachname', sortable: true },
-            { id: 'email', name: 'Email', sortable: true },
-            { id: 'features', name: 'Funktionen' },
-            { id: 'options', name: 'Optionen' },
+          <Table
+            loading={loading}
+           columns={[
+            { id: 'firstName', name: 'Vorname', sortable: true, width: '16.6667%' },
+            { id: 'lastName', name: 'Nachname', sortable: true, width: '16.6667%' },
+            { id: 'email', name: 'Email', sortable: true, width: '16.6667%' },
+            { id: 'features', name: 'Funktionen', width: '33.3334%' },
+            { id: 'options', name: 'Optionen', width: '16.6667%' },
           ]} data={members.filter(member => member.type === view)
           .map(member => ({
             ...member,
@@ -169,11 +188,11 @@ function CrewPage() {
 
                       </div>
                       {
-                        license.type === 'firstAid' ? <div key={license.uuid} title='Erste-Hilfe-Lizenz'><BriefcaseMedical size={16} /></div> :
-                        license.type === 'driversLicense' ? <div key={license.uuid} title='Führerschein'><Car size={16} /></div> :
-                        license.type === 'examination' ? <div key={license.uuid} title='Prüfung'><HeartPulse size={16} /></div> :
-                        license.type === 'training' ? <div key={license.uuid} title='Schulung'><GraduationCap size={16} /></div> :
-                        <div key={license.uuid} title={license.name}><UserStar size={16} /></div>
+                        license.type === 'firstAid' ? <div key={license.uid} title='Erste-Hilfe-Lizenz'><BriefcaseMedical size={16} /></div> :
+                        license.type === 'driversLicense' ? <div key={license.uid} title='Führerschein'><Car size={16} /></div> :
+                        license.type === 'examination' ? <div key={license.uid} title='Prüfung'><HeartPulse size={16} /></div> :
+                        license.type === 'training' ? <div key={license.uid} title='Schulung'><GraduationCap size={16} /></div> :
+                        <div key={license.uid} title={license.name}><UserStar size={16} /></div>
                       }
                     </>
                   ))
@@ -231,6 +250,7 @@ function CrewPage() {
           </div>
         </Modal>
       )}
+      </div>
     </ProtectedPage>
   )
 }

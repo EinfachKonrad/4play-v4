@@ -1,5 +1,5 @@
 export default interface Entry {
-    uuid: string;
+    uid: string;
 
     title: string;
     content: string; // Markdown content of the entry
@@ -7,7 +7,7 @@ export default interface Entry {
     path: string; // Unique path for the entry (e.g., "getting started/installation")
 
     files?: Array<{
-        uuid: string;
+        uid: string;
         name: string;
         url: string; // URL to access the file
         type: string; // MIME type of the file
@@ -17,6 +17,6 @@ export default interface Entry {
         date: Date;
         event: string;
         description?: string;
-        updatedBy: string; // User ID of the person who made the change
+        updatedBy: string; // User uid of the person who made the change
     }>;
 }

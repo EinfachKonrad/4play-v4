@@ -13,7 +13,7 @@ interface ModalProps {
 export default function Modal({ title, icon: Icon, onClose, onBack, children }: ModalProps) {
   return (
     <div className='z-10 w-screen h-screen fixed top-0 left-0 flex items-center justify-center bg-black/60'>
-        <div className='overflow-scroll flex flex-col gap-4 p-6 border max-h-[80vh] max-w-[60vw] border-neutral-700 bg-neutral-950 rounded-md h-full w-full'>
+        <div className='overflow-auto flex flex-col gap-4 p-6 border max-h-[80vh] max-w-[60vw] border-neutral-700 bg-neutral-950 rounded-md h-full w-full'>
           <div className='flex justify-between items-center'>
             <div className='flex'>
               {onBack && <div onClick={onBack} className='cursor-pointer my-auto mr-2'><ChevronLeft /></div>}

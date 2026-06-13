@@ -1,5 +1,5 @@
 export default interface Position {
-    uuid: string; // position uuid (po-xxx)
+    uid: string; // position id
     name: string;    // position name (e.g. "Sound Engineer", "Lighting Technician", "Stage Manager", etc.)
     description?: string; // position description (optional)
     color?: string;   // position color in hex format (e.g. "#FF0000" for red), used for displaying the position in the calendar and on documents

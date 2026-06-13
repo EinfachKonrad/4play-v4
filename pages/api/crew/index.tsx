@@ -21,7 +21,7 @@ function buildDecryptedMember(member: CrewMember): CrewMember {
         email: decryptData(safe.email) as CrewMember['email'],
         phone: decryptData(safe.phone) as CrewMember['phone'],
         dateOfBirth: decryptData(safe.dateOfBirth) as CrewMember['dateOfBirth'],
-        roleUuid: decryptData(safe.roleUuid) as string,
+        roleUid: decryptData(safe.roleUid) as string,
         licenses: Array.isArray((safe as any).licenses)
             ? (safe as any).licenses.map((lic: any) => ({
                   ...lic,
@@ -35,8 +35,8 @@ function buildDecryptedMember(member: CrewMember): CrewMember {
 
 function buildLimitedMember(member: CrewMember) {
     const decrypted = buildDecryptedMember(member)
-    const { uuid, firstName, lastName, type } = decrypted
-    return { uuid, firstName, lastName, type }
+    const { uid, firstName, lastName, type } = decrypted
+    return { uid, firstName, lastName, type }
 }
 
 async function handler(req: ApiRequest, res: NextApiResponse) {

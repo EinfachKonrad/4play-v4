@@ -1,5 +1,5 @@
 export default interface Warehouse {
-    uuid: string;
+    uid: string;
     name: string;
 
     address: {
@@ -20,7 +20,7 @@ export default interface Warehouse {
     }
 
     layout: Array<{
-        uuid: string; // Unique identifier for the shelf
+        uid: string; // Unique identifier for the shelf
         aisle: string; // Identifier for the aisle (e.g., "A", "1")
         shelf: string; // Identifier for the shelf (e.g., "1", "A")
         levels: {

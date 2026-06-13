@@ -1,6 +1,7 @@
 access  -> view some page(s)
 view    -> read some data
 manage  -> edit some data
+use     -> use some feature
 
 
 
@@ -8,6 +9,16 @@ accessCalendar          // access to /calendar/ -> view events and appointments 
 
     viewEvents          // read all events
     manageEvents        // edit all events
+
+        viewEventCalculation
+        manageEventCalculation
+        viewEventEquipment
+        manageEventEquipment
+        viewEventCrew
+        manageEventCrew
+        viewEventTimetable
+        manageEventTimetable
+
     viewAppointments    // read all appointments
     manageAppointments  // edit all appointments
     
@@ -26,3 +37,9 @@ accessCrew              // access to /crew/
     viewCrewNames         // read names of crew members
     viewCrewMembers         // read all data of others
     manageCrewMembers       // edit other crew members
+
+
+    viewBrandingHistory // See history in API requests
+
+
+useLexwareIntegration
