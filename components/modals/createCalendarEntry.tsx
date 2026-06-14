@@ -7,6 +7,7 @@ import Appointment from '@/types/calendar/appointment'
 import Event from '@/types/calendar/event'
 import CrewMember from '@/types/crewMember'
 import Dropdown from '../ui/Dropdown'
+import { v4 as uuidv4 } from 'uuid'
 
 interface CreateCalendarEntryModalProps {
   onClose: () => void
@@ -59,10 +60,6 @@ type Entry = {
       start: Date | null
       end: Date | null
     }>
-    calculation: {
-      importEquipment: boolean
-      importCrew: boolean
-    }
   }>
 }
 
@@ -80,16 +77,12 @@ function formatDateLocal(date: Date | null): string {
 
 function createEmptyProject() {
   return {
-    uid: `project-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    uid: uuidv4(),
     name: '',
     companyUid: '',
     clientUid: '',
     dates: [{ start: null, end: null }],
     timetable: [],
-    calculation: {
-      importEquipment: true,
-      importCrew: true,
-    },
   }
 }
 
@@ -352,8 +345,6 @@ export default function CreateCalendarEntryModal({ onClose }: CreateCalendarEntr
           })),
       },
       calculation: {
-        importEquipment: project.calculation.importEquipment,
-        importCrew: project.calculation.importCrew,
         positions: [],
       },
     })) satisfies Event['projects']
@@ -822,32 +813,6 @@ export default function CreateCalendarEntryModal({ onClose }: CreateCalendarEntr
                 </div>
               ))}
             </div>
-
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-2'>
-              <label className='inline-flex items-center gap-2 text-sm text-gray-300'>
-                <input
-                  type='checkbox'
-                  checked={projectDraft.calculation.importEquipment}
-                  onChange={(e) => setProjectDraft({
-                    ...projectDraft,
-                    calculation: { ...projectDraft.calculation, importEquipment: e.target.checked },
-                  })}
-                />
-                Equipment in Kalkulation übernehmen
-              </label>
-              <label className='inline-flex items-center gap-2 text-sm text-gray-300'>
-                <input
-                  type='checkbox'
-                  checked={projectDraft.calculation.importCrew}
-                  onChange={(e) => setProjectDraft({
-                    ...projectDraft,
-                    calculation: { ...projectDraft.calculation, importCrew: e.target.checked },
-                  })}
-                />
-                Crew in Kalkulation übernehmen
-              </label>
-            </div>
-
             <div className='flex items-center justify-end gap-2'>
               <Button type='button' onClick={() => setProjectDraft(createEmptyProject())}>Zurücksetzen</Button>
               <Button type='submit'>Projekt hinzufügen</Button>
@@ -866,9 +831,6 @@ export default function CreateCalendarEntryModal({ onClose }: CreateCalendarEntr
                       </div>
                     </div>
                     <Button type='button' onClick={() => removeProjectFromEvent(project.uid)}>Entfernen</Button>
-                  </div>
-                  <div className='text-xs text-gray-400'>
-                    Kalkulation: Equipment {project.calculation.importEquipment ? 'ja' : 'nein'}, Crew {project.calculation.importCrew ? 'ja' : 'nein'}
                   </div>
                 </div>
               ))

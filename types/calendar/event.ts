@@ -85,8 +85,8 @@ export default interface Event {
         }
 
         calculation: {
-            importEquipment: boolean;   // if true, the equipment booked for the project will be included in the cost calculation, otherwise it will be ignored (useful for projects that are not charged for equipment, e.g. internal projects or projects with a fixed price)
-            importCrew: boolean;    // if true, the crew booked for the project will be included in the cost calculation, otherwise it will be ignored (useful for projects that are not charged for crew, e.g. internal projects or projects with a fixed price)
+            importEquipment?: boolean;   // if true, the equipment booked for the project will be included in the cost calculation, otherwise it will be ignored (useful for projects that are not charged for equipment, e.g. internal projects or projects with a fixed price)
+            importCrew?: boolean;    // if true, the crew booked for the project will be included in the cost calculation, otherwise it will be ignored (useful for projects that are not charged for crew, e.g. internal projects or projects with a fixed price)
 
             positions: Array<{
                 uid: string;   // position uid (p-xxx)

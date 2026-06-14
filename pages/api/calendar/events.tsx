@@ -18,6 +18,10 @@ import { NextApiResponse } from 'next'
 import { v4 as uuidv4 } from 'uuid'
 
 type EventProject = Event['projects'][number]
+type CalendarScopeProject = Pick<EventProject, 'name' | 'dates'>
+type CalendarScopeEvent = Pick<Event, 'uid' | 'name' | 'description'> & {
+    projects: CalendarScopeProject[]
+}
 type StoredEventDocument = Record<string, unknown> & {
     uid?: string
     createdAt?: Date
@@ -671,6 +675,27 @@ function applyReadPermissions(event: Event, permissions: string[]) {
     return event
 }
 
+function isCalendarScope(scope: unknown) {
+    if (Array.isArray(scope)) {
+        return scope[0] === 'calendar'
+    }
+
+    return scope === 'calendar'
+}
+
+function projectCalendarScope(event: Event): CalendarScopeEvent {
+    return {
+        uid: event.uid,
+        name: event.name,
+        description: event.description,
+        projects: event.projects.map((project) => ({
+            uid: project.uid,
+            name: project.name,
+            dates: project.dates,
+        })),
+    }
+}
+
 function buildEventFromStoredDocument(document: StoredEventDocument): Event {
     const { _id, createdAt, updatedAt, ...payload } = document
     void _id
@@ -688,7 +713,8 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
     const userPermissions = req.user?.permissions ?? []
 
     if (req.method === 'GET') {
-        const { uid } = req.query
+        const { uid, scope } = req.query
+        const calendarScope = isCalendarScope(scope)
 
         if (uid) {
             const storedEvent = await eventsCollection.findOne(buildQueryByUid(getUidFromQuery(uid)))
@@ -696,16 +722,18 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
                 return res.status(404).json({ error: 'Event not found' })
             }
 
-            return res.status(200).json(
-                applyReadPermissions(buildEventFromStoredDocument(storedEvent), userPermissions)
-            )
+            const event = applyReadPermissions(buildEventFromStoredDocument(storedEvent), userPermissions)
+
+            return res.status(200).json(calendarScope ? projectCalendarScope(event) : event)
         }
 
         const storedEvents = await eventsCollection.find({}).toArray()
+        const events = storedEvents.map((storedEvent) =>
+            applyReadPermissions(buildEventFromStoredDocument(storedEvent), userPermissions)
+        )
+
         return res.status(200).json(
-            storedEvents.map((storedEvent) =>
-                applyReadPermissions(buildEventFromStoredDocument(storedEvent), userPermissions)
-            )
+            calendarScope ? events.map((event) => projectCalendarScope(event)) : events
         )
     }
 

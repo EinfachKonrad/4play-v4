@@ -8,6 +8,7 @@ import CreateCalendarEntryModal from '@/components/modals/createCalendarEntry'
 import { isSameDay, addDays, addWeeks, addMonths, addYears } from 'date-fns'
 import Appointment from '@/types/calendar/appointment'
 import { useRouter } from 'next/router'
+import { saveToSessionStorage } from '@/lib/sessionStorage'
 
 function addInterval(date: Date, interval: number, unit: 'day' | 'week' | 'month' | 'year'): Date {
   switch (unit) {
@@ -118,7 +119,7 @@ function CalendarPage() {
 
   async function fetchEvents() {
     try {
-      const res = await fetch('/api/calendar/events')
+      const res = await fetch('/api/calendar/events?scope=calendar')
       if (!res.ok) return
       const data = await res.json()
       setEvents(data)
@@ -179,12 +180,12 @@ function CalendarPage() {
           label: e.name,
           start: firstRange.start,
           end: lastRange.end,
-          uuid: e.uuid,
+          uid: e.uuid,
           contextMenuOptions: [
             { id: 'view',
               label: 'Ansehen',
               icon: Calendar,
-              onClick: () => {router.push(`/calendar/event/${e.uuid}`)}
+              onClick: () => {handleRedirect('event', e.uid)}
             }
           ]
       })
@@ -202,7 +203,14 @@ function CalendarPage() {
         label: a.name,
         start: occurrenceStart.toISOString(),
         end: new Date(occurrenceStart.getTime() + (new Date(a.date.end).getTime() - new Date(a.date.start).getTime())).toISOString(),
-        uuid: a.uid,
+        uid: a.uid,
+        contextMenuOptions: [
+          { id: 'view',
+            label: 'Ansehen', 
+            icon: Calendar,
+            onClick: () => {handleRedirect('appointment', a.uid)}
+          }
+        ]
       })
     })
 
@@ -220,6 +228,21 @@ function CalendarPage() {
     fetchEvents()
     fetchAppointments()
     fetchBirthdays()
+  }
+
+  const handleRedirect = (type: 'event' | 'appointment', uid: string) => {
+    switch (type) {
+      case 'event':
+        saveToSessionStorage('selectedEvent', events.find((e: any) => e.uid === uid))
+        router.push(`/calendar/event/${uid}`)
+        break
+      case 'appointment':
+        saveToSessionStorage('selectedAppointment', appointments.find((a) => a.uid === uid))
+        router.push(`/calendar/appointment/${uid}`)
+        break
+      default:
+        break
+    }
   }
 
 

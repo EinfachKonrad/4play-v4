@@ -19,7 +19,7 @@ import Button from './Button'
     label?: string
     start: string
     end: string
-    uuid?: string
+    uid?: string
     contextMenuOptions?: CalendarContextMenuOption[]
   }
 
@@ -116,8 +116,8 @@ export default function Calendar({ data, onSelect }: CalendarProps) {
   }
 
   const getEntryStableKey = (entry: CalendarEntry) => {
-    if (entry.uuid) {
-      return `${entry.type}:${entry.uuid}`
+    if (entry.uid) {
+      return `${entry.type}:${entry.uid}`
     }
 
     return `${entry.type}:${entry.start}:${entry.end}:${entry.label ?? ''}`
