@@ -1,4 +1,5 @@
 import EditCrewMemberModal from '@/components/modals/editCrewMember'
+import CreateCrewMemberModal from '@/components/modals/createCrewMember'
 import Button from '@/components/ui/Button'
 import MessageBox from '@/components/ui/MessageBox'
 import Navbar from '@/components/ui/Navbar'
@@ -39,6 +40,7 @@ function CrewPage() {
   const [loading, setLoading] = useState(true)
   const [target, setTarget] = useState<CrewMember | null>(null)
   const [displayEditModal, setDisplayEditModal] = useState(false)
+  const [displayCreateModal, setDisplayCreateModal] = useState(false)
   const [displayResetPasswordMessageBox, setDisplayResetPasswordMessageBox] = useState(false)
   const [displayReauthModal, setDisplayReauthModal] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
@@ -49,16 +51,16 @@ function CrewPage() {
 
 
   useEffect(() => {
-        setView((router.query.view as typeof view) || 'internal')
-    }, [router.query.view])
+      setView((router.query.view as typeof view) || 'internal')
+  }, [router.query.view])
     
-    const handleViewChange = (newView: typeof view) => {
-      setView(newView)
-      router.push({
-          pathname: router.pathname,
-          query: { ...router.query, view: newView }
-      }, undefined, { shallow: true })
-    }
+  const handleViewChange = (newView: typeof view) => {
+    setView(newView)
+    router.push({
+        pathname: router.pathname,
+        query: { ...router.query, view: newView }
+    }, undefined, { shallow: true })
+  }
 
   async function fetchCrew() {
     try {
@@ -143,7 +145,7 @@ function CrewPage() {
       <div className="flex items-center justify-between mb-4">
         <PageTitle title="Crew" icon={UsersRound} />
         <div className="flex items-center gap-2">
-            <Button>
+            <Button onClick={() => setDisplayCreateModal(true)}>
               <Plus className='inline h-4 w-4' />
               <span className='!p-0'>Neu</span>
             </Button>
@@ -209,6 +211,10 @@ function CrewPage() {
           <EditCrewMemberModal {...target!}  onClose={() => handleSaveEdit()} />
         )
       }
+
+      { displayCreateModal && (
+        <CreateCrewMemberModal onClose={() => { setDisplayCreateModal(false); fetchCrew() }} />
+      )}
 
       { displayResetPasswordMessageBox && (
         <MessageBox 

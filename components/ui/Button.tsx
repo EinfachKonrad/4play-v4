@@ -6,13 +6,14 @@ interface ButtonProps {
   className?: string;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  design?: "danger";
 }
 
-export default function Button({ children, onClick, className, type = 'button', disabled = false }: ButtonProps) {
+export default function Button({ children, onClick, className, type = 'button', disabled = false, design }: ButtonProps) {
   return (
     <button
       type={type}
-      className={`text-sm rounded-md border border-gray-800 p-1 cursor-pointer transition-all duration-200 hover:bg-gray-700 ${className}`}
+      className={`text-sm rounded-md border border-gray-800 p-1 cursor-pointer transition-all duration-200 hover:bg-gray-700 ${design === 'danger' ? 'border-red-600 hover:bg-red-600 text-white' : ''} ${className}`}
       onClick={onClick}
       disabled={disabled}
     >

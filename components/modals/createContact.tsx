@@ -6,6 +6,7 @@ import Client from '@/types/contacts/clients'
 import { useSession } from 'next-auth/react'
 import Dropdown from '../ui/Dropdown'
 import Button from '../ui/Button'
+import { v4 as uuidv4 } from 'uuid'
 
 interface CreateContactModalProps {
     onClose: () => void
@@ -15,6 +16,7 @@ export default function CreateContactModal({ onClose }: CreateContactModalProps)
     const { data: session } = useSession()
     const [currentStep, setCurrentStep] = useState(1)
     const displayPreviousButton = currentStep > 1
+    const [saving, setSaving] = useState(false)
     const [entryData, setEntryData] = useState({
         type: '',
         uid: '',
@@ -50,6 +52,39 @@ export default function CreateContactModal({ onClose }: CreateContactModalProps)
         }
     }
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSaving(true)
+
+        try {
+            const newClient: Client = {
+                ...entryData,
+                uid: uuidv4(),
+                history: [
+                    ...entryData.history,
+                    {
+                        date: new Date(),
+                        event: 'created',
+                        updatedBy: session?.user?.uid ?? 'unknown'
+                    }
+                ]
+            }
+
+            await fetch('/api/contacts/clients', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newClient)
+            })
+            onClose()
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setSaving(false)
+        }
+    }
+
 
     return (
         <Modal
@@ -62,7 +97,7 @@ export default function CreateContactModal({ onClose }: CreateContactModalProps)
                     <div className='flex flex-col gap-2 mt-4 h-full'>
                         <h2 className='text-lg font-semibold'>Stammdaten</h2>
                         <div>
-                            <form className='flex flex-col gap-4'>
+                            <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
                                 <div className='w-full flex gap-2'>
                                     <div className='w-2/3'>
                                         <label className='text-sm text-gray-400'>Name</label>
@@ -137,6 +172,7 @@ export default function CreateContactModal({ onClose }: CreateContactModalProps)
                                         Weitere Adresse hinzufügen
                                     </Button>
                                 </div>
+                                <Button type='submit' disabled={saving}>{saving ? 'Speichern...' : 'Speichern'}</Button>
                             </form>
                         </div>
                     </div>

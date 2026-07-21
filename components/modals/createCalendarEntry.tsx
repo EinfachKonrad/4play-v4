@@ -278,6 +278,21 @@ export default function CreateCalendarEntryModal({ onClose }: CreateCalendarEntr
     }))
   }
 
+  function duplicateProject(uid: string) {
+    const projectToDuplicate = entryData.projects?.find((project) => project.uid === uid)
+    if (!projectToDuplicate) return
+
+    const duplicatedProject = {
+      ...projectToDuplicate,
+      uid: uuidv4(),
+    }
+
+    setEntryData((current) => ({
+      ...current,
+      projects: [...(current.projects ?? []), duplicatedProject],
+    }))
+  }
+
   function addProjectToEvent() {
     const trimmedName = projectDraft.name.trim()
     if (!trimmedName) {
@@ -825,11 +840,15 @@ export default function CreateCalendarEntryModal({ onClose }: CreateCalendarEntr
                 <div key={project.uid} className='rounded-md border border-gray-700 p-3 flex flex-col gap-2'>
                   <div className='flex items-center justify-between gap-2'>
                     <div>
-                      <div className='font-medium'>{project.name}</div>
+                      <Input className='font-medium' value={project.name} onChange={(e) => setEntryData((current) => ({
+                        ...current,
+                        projects: current.projects?.map((p) => p.uid === project.uid ? { ...p, name: e.target.value } : p)
+                      }))} />
                       <div className='text-xs text-gray-400'>
                         {project.dates.map((dateRange) => `${formatDateTimeLocal(dateRange.start)} - ${formatDateTimeLocal(dateRange.end)}`).join(', ')}
                       </div>
                     </div>
+                    <Button type='button' onClick={() => duplicateProject(project.uid)}>Duplizieren</Button>
                     <Button type='button' onClick={() => removeProjectFromEvent(project.uid)}>Entfernen</Button>
                   </div>
                 </div>

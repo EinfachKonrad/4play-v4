@@ -1,17 +1,11 @@
 import { addDays, addMonths, format, isSameDay, isSameMonth, startOfMonth, startOfWeek } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, LucideIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import Button from './Button'
+import ContextMenu, { ContextMenuItem, ContextMenuState } from './ContextMenu'
 
-  export type CalendarContextMenuOption = {
-    id: string
-    label: string
-    icon: LucideIcon
-    onClick: (entry: CalendarEntry) => void
-    disabled?: boolean
-    danger?: boolean
-  }
+  export type CalendarContextMenuOption = ContextMenuItem<CalendarEntry>
 
   export type CalendarEntry = {
     type: 'event' | 'appointment' | 'birthday' | 'holiday' | 'cancelled' | 'archived' | 'equipment'
@@ -20,47 +14,27 @@ import Button from './Button'
     start: string
     end: string
     uid?: string
+    onSelect?: () => void
     contextMenuOptions?: CalendarContextMenuOption[]
   }
 
   interface CalendarProps {
     data: CalendarEntry[] | ((day: Date) => CalendarEntry[])
-    onSelect?: (entry: CalendarEntry) => void
+    month?: Date
+    onMonthChange?: (month: Date) => void
   }
 
 
-export default function Calendar({ data, onSelect }: CalendarProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [contextMenu, setContextMenu] = useState<{
-    x: number
-    y: number
-    entry: CalendarEntry
-    options: CalendarContextMenuOption[]
-  } | null>(null)
+export default function Calendar({ data, month, onMonthChange }: CalendarProps) {
+  const [currentMonth, setCurrentMonth] = useState(() => month ?? new Date())
+  const [contextMenu, setContextMenu] = useState<ContextMenuState<CalendarEntry> | null>(null)
   const days: Date[] = Array.from({ length: 42 }, (_, i) => addDays(startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 }), i))
 
   useEffect(() => {
-    if (!contextMenu) {
-      return
+    if (month) {
+      setCurrentMonth(month)
     }
-
-    const closeMenu = () => setContextMenu(null)
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setContextMenu(null)
-      }
-    }
-
-    window.addEventListener('click', closeMenu)
-    window.addEventListener('scroll', closeMenu, true)
-    window.addEventListener('keydown', closeOnEscape)
-
-    return () => {
-      window.removeEventListener('click', closeMenu)
-      window.removeEventListener('scroll', closeMenu, true)
-      window.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [contextMenu])
+  }, [month])
 
   const getColorClass = (type: CalendarEntry['type']) => {
     if (type === 'birthday') return 'bg-green-700'
@@ -117,7 +91,7 @@ export default function Calendar({ data, onSelect }: CalendarProps) {
 
   const getEntryStableKey = (entry: CalendarEntry) => {
     if (entry.uid) {
-      return `${entry.type}:${entry.uid}`
+      return `${entry.type}:${entry.uid}:${entry.start}:${entry.end}`
     }
 
     return `${entry.type}:${entry.start}:${entry.end}:${entry.label ?? ''}`
@@ -268,16 +242,23 @@ export default function Calendar({ data, onSelect }: CalendarProps) {
     return layoutByDay
   }, [data, days])
 
+  const handleMonthChange = (month: Date) => {
+    setCurrentMonth(month)
+    if (onMonthChange) {
+      onMonthChange(month)
+    }
+  }
+
 
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <Button onClick={() => setCurrentMonth((prev => addMonths(prev, -1)))}><ChevronLeft className='h-6 w-6' /></Button>
+        <Button onClick={() => handleMonthChange(addMonths(currentMonth, -1))}><ChevronLeft className='h-6 w-6' /></Button>
         <div className="flex items-center gap-4">
           <section className="text-lg font-semibold">{format(currentMonth, 'MMMM yyyy', { locale: de })}</section>
-          <Button className={` ${isSameMonth(currentMonth, new Date()) ? 'bg-gray-600' : ''}`} onClick={() => setCurrentMonth(new Date())}>Heute</Button>
+          <Button className={` ${isSameMonth(currentMonth, new Date()) ? 'bg-gray-600' : ''}`} onClick={() => handleMonthChange(new Date())}>Heute</Button>
         </div>
-        <Button onClick={() => setCurrentMonth((prev => addMonths(prev, 1)))}><ChevronRight className='h-6 w-6' /></Button>
+        <Button onClick={() => handleMonthChange(addMonths(currentMonth, 1))}><ChevronRight className='h-6 w-6' /></Button>
       </div>
       <div className="grid grid-cols-7 gap-px">
         {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day, i) => (
@@ -314,17 +295,14 @@ export default function Calendar({ data, onSelect }: CalendarProps) {
                     setContextMenu({
                       x: event.clientX,
                       y: event.clientY,
-                      entry,
-                      options: entry.contextMenuOptions,
+                      payload: entry,
+                      items: entry.contextMenuOptions,
                     })
                   }}
                   onClick={() => {
-                    if (entry.type === 'birthday') {
-                        // show birthday details
-                    } else if (entry.type === 'event' || entry.type === 'appointment') {
-                      onSelect?.(entry)
-                    }
-                  }}
+                    if (entry.onSelect) {
+                      entry.onSelect()
+                    }}}
                 >
                   <span className={segmentStyle.showLabel ? 'truncate block' : 'opacity-0 block truncate select-none'}>{entry.title}</span>
                 </div>
@@ -333,34 +311,7 @@ export default function Calendar({ data, onSelect }: CalendarProps) {
           </div>
         ))}
       </div>
-      {contextMenu && (
-        <div
-          className="fixed z-50 min-w-[180px] rounded-md border border-neutral-700 bg-neutral-900 py-1 shadow-2xl"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-          onClick={(event) => event.stopPropagation()}
-          onContextMenu={(event) => event.preventDefault()}
-        >
-          {contextMenu.options.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              disabled={option.disabled}
-              className={`text-xs h-full cursor-pointer inline-flex w-full px-2 py-1.5 text-left text-sm transition-colors ${option.disabled ? 'cursor-not-allowed text-neutral-500' : option.danger ? 'text-red-400 hover:bg-red-950/40' : 'text-gray-200 hover:bg-neutral-800'}`}
-              onClick={() => {
-                if (option.disabled) {
-                  return
-                }
-
-                option.onClick(contextMenu.entry)
-                setContextMenu(null)
-              }}
-            >
-              <option.icon className='h-3 w-3 mr-2 my-auto' />
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <ContextMenu menu={contextMenu} onClose={() => setContextMenu(null)} />
     </div>
   )
 }

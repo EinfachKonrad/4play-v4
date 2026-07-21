@@ -4,6 +4,7 @@ export default interface Event {
     companyUid: string; // company uid (c-xxx) that the event belongs to
     clientUid?: string;  // client uid (cl-xxx) that the event belongs to (optional, can be left empty if the event is not associated with a specific client)
 
+    number?: string; // event number (e.g. "1")
     name: string;
     description: string;
 

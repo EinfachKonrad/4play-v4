@@ -38,6 +38,28 @@ const SENSITIVE_FIELDS = ['passwordHash'] as const
 const ENCRYPTED_STRING_FIELDS = ['type', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'roleUid'] as const
 const SERVER_MANAGED_FIELDS = ['createdAt', 'updatedAt'] as const
 
+function normalizeUid(value: string | undefined) {
+    if (!value) {
+        return undefined
+    }
+
+    const trimmed = value.trim()
+    if (!trimmed || trimmed === 'undefined' || trimmed === 'null') {
+        return undefined
+    }
+
+    return trimmed
+}
+
+function normalizeEmail(value: string | undefined) {
+    if (!value) {
+        return undefined
+    }
+
+    const trimmed = value.trim().toLowerCase()
+    return trimmed || undefined
+}
+
 function encryptIfPlain(value: string) {
     const decrypted = decryptData(value)
     return decrypted !== value ? value : encryptData(value)
@@ -115,20 +137,23 @@ function buildResponseMember(member: CrewMember, canViewRoleUid: boolean, canVie
 async function handler(req: ApiRequest, res: NextApiResponse) {
     requireMethod(req, res, ['GET', 'PUT'])
 
-    const userUid = req.user!.uid
-    const queryUid = typeof req.query.uid === 'string'
+    const userUid = normalizeUid(req.user?.uid)
+    const userEmail = normalizeEmail(req.user?.email)
+    const rawQueryUid = typeof req.query.uid === 'string'
         ? req.query.uid
         : Array.isArray(req.query.uid)
             ? req.query.uid[0]
             : undefined
+    const queryUid = normalizeUid(rawQueryUid)
+    const isOwnProfileRequest = !queryUid
     const uid = queryUid || userUid
 
-    if (!uid) {
+    if (!uid && !userEmail) {
         throw new BadRequestError('uid is required')
     }
 
     const userPermissions = req.user!.permissions
-    const isOwnProfile = uid === userUid
+    const isOwnProfile = isOwnProfileRequest || (Boolean(userUid) && uid === userUid)
 
     const hasWildcard = userPermissions.includes('*')
     const canViewOthers = hasWildcard || userPermissions.includes('viewCrewMembers')
@@ -142,12 +167,26 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
 
         const client = await clientPromise
         const db = client.db('settings')
-        const encryptedUid = encryptIfPlain(uid)
-        let member = await db.collection<CrewMember>('crewmembers').findOne({ uid: encryptedUid })
+        let member: CrewMember | null = null
 
-        // Backward-compatible fallback for rows where uid is stored plain.
-        if (!member && encryptedUid !== uid) {
-            member = await db.collection<CrewMember>('crewmembers').findOne({ uid })
+        if (uid) {
+            const encryptedUid = encryptIfPlain(uid)
+            member = await db.collection<CrewMember>('crewmembers').findOne({ uid: encryptedUid })
+
+            // Backward-compatible fallback for rows where uid is stored plain.
+            if (!member && encryptedUid !== uid) {
+                member = await db.collection<CrewMember>('crewmembers').findOne({ uid })
+            }
+        }
+
+        if (!member && isOwnProfileRequest && userEmail) {
+            const encryptedEmail = encryptIfPlain(userEmail)
+            member = await db.collection<CrewMember>('crewmembers').findOne({ email: encryptedEmail })
+
+            // Backward-compatible fallback for rows where email is stored plain.
+            if (!member && encryptedEmail !== userEmail) {
+                member = await db.collection<CrewMember>('crewmembers').findOne({ email: userEmail })
+            }
         }
 
         if (!member) {
@@ -195,17 +234,37 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
 
         const client = await clientPromise
         const db = client.db('settings')
-        const encryptedUid = encryptIfPlain(uid)
-        let result = await db.collection<CrewMember>('crewmembers').updateOne(
-            { uid: encryptedUid },
-            { $set: { ...encryptedUpdates, updatedAt: new Date() } }
-        )
+        const updatePayload = { $set: { ...encryptedUpdates, updatedAt: new Date() } }
+        let result = { matchedCount: 0 }
 
-        if (result.matchedCount === 0 && encryptedUid !== uid) {
+        if (uid) {
+            const encryptedUid = encryptIfPlain(uid)
             result = await db.collection<CrewMember>('crewmembers').updateOne(
-                { uid },
-                { $set: { ...encryptedUpdates, updatedAt: new Date() } }
+                { uid: encryptedUid },
+                updatePayload
             )
+
+            if (result.matchedCount === 0 && encryptedUid !== uid) {
+                result = await db.collection<CrewMember>('crewmembers').updateOne(
+                    { uid },
+                    updatePayload
+                )
+            }
+        }
+
+        if (result.matchedCount === 0 && isOwnProfileRequest && userEmail) {
+            const encryptedEmail = encryptIfPlain(userEmail)
+            result = await db.collection<CrewMember>('crewmembers').updateOne(
+                { email: encryptedEmail },
+                updatePayload
+            )
+
+            if (result.matchedCount === 0 && encryptedEmail !== userEmail) {
+                result = await db.collection<CrewMember>('crewmembers').updateOne(
+                    { email: userEmail },
+                    updatePayload
+                )
+            }
         }
 
         if (result.matchedCount === 0) {

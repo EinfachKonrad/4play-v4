@@ -4,6 +4,7 @@ import LoadingText from '@/components/ui/LoadingText'
 import MessageBox from '@/components/ui/MessageBox'
 import PageTitle from '@/components/utility/PageTitle'
 import useInstanceConfig from '@/hooks/useInstanceConfig'
+import useSoftwareTab from '@/hooks/useSoftwareTab'
 import CrewMember from '@/types/crewMember'
 import { Calendar1, LetterText, Mail, Phone, User, UserRound } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
@@ -23,10 +24,15 @@ function profilePage() {
     const [currentPassword, setCurrentPassword] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
+    const { setCurrentTabTitle } = useSoftwareTab()
 
-    async function fetchUser(uid?: string) {
+        useEffect(() => {
+            setCurrentTabTitle("Profil")
+        }, [setCurrentTabTitle])
+
+    async function fetchUser() {
         try {
-            const query = uid ? `?uid=${encodeURIComponent(uid)}` : ''
+            const query = session?.user?.uid ? `?uid=${encodeURIComponent(session.user.uid)}` : ''
             const res = await fetch('/api/crew/crewmember' + query)
             if (!res.ok) {
                 throw new Error(`Error fetching user: ${res.statusText}`)
@@ -44,7 +50,7 @@ function profilePage() {
         }
 
         setLoading(true)
-        fetchUser(session?.user?.uid).finally(() => setLoading(false))
+        fetchUser().finally(() => setLoading(false))
     }, [status, session?.user?.uid])
 
     const onSubmit = async (e: React.FormEvent) => {

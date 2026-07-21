@@ -104,6 +104,40 @@ function CalendarPage() {
   const [events, setEvents] = useState([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [birthdays, setBirthdays] = useState([])
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+
+    useEffect(() => {
+        setView((router.query.view as typeof view) || 'calendar')
+    }, [router.query.view])
+      
+    const handleViewChange = (newView: typeof view) => {
+      setView(newView)
+      router.push({
+          pathname: router.pathname,
+          query: { ...router.query, view: newView }
+      }, undefined, { shallow: true })
+    }
+
+    useEffect(() => {
+        const monthParam = router.query.month as string
+        if (monthParam) {
+            const [mm, yyyy] = monthParam.split('-')
+            const parsed = new Date(parseInt(yyyy), parseInt(mm) - 1, 1)
+            if (!isNaN(parsed.getTime())) {
+                setCurrentMonth(parsed)
+            }
+        }
+    }, [router.query.month])
+      
+    const handleMonthChange = (newMonth: Date) => {
+      setCurrentMonth(newMonth)
+      const mm = String(newMonth.getMonth() + 1).padStart(2, '0')
+      const yyyy = newMonth.getFullYear()
+      router.push({
+          pathname: router.pathname,
+          query: { ...router.query, month: `${mm}-${yyyy}` }
+      }, undefined, { shallow: true })
+    }
 
 
   async function fetchBirthdays() {
@@ -149,7 +183,7 @@ function CalendarPage() {
         entries.push({
           type: 'birthday',
           title: (<div className='inline-flex items-center gap-1'><Cake size={12} /> {`${b.firstName} ${b.lastName}`}</div>),
-          label: `${b.firstName} ${b.lastName}`,
+          label: `${b.firstName} ${b.lastName} hat Geburtstag`,
           start: b.dateOfBirth,
           end: b.dateOfBirth,
         })
@@ -159,37 +193,42 @@ function CalendarPage() {
     // Events
     events.forEach((e: any) => {
       const dateRanges = getEventDateRanges(e)
-      const isEventOnDay = dateRanges.some((range) => {
+      if (dateRanges.length === 0) {
+        return
+      }
+
+      const matchingRanges = dateRanges.filter((range) => {
         const rangeStart = new Date(range.start)
         const rangeEnd = new Date(range.end)
         return isRangeOnDay(rangeStart, rangeEnd, day)
       })
 
-      if (!isEventOnDay || dateRanges.length === 0) {
+      if (matchingRanges.length === 0) {
         return
       }
 
-      const sortedRanges = [...dateRanges].sort((left, right) => left.start.localeCompare(right.start))
-      const firstRange = sortedRanges[0]
-      const lastRange = sortedRanges[sortedRanges.length - 1]
+      const aggregatedStart = new Date(Math.min(...matchingRanges.map((range) => new Date(range.start).getTime())))
+      const aggregatedEnd = new Date(Math.max(...matchingRanges.map((range) => new Date(range.end).getTime())))
 
-      if (firstRange && lastRange) {
-        entries.push({
-          type: e.cancelled ? 'cancelled' : 'event',
-          title: (<div className='inline-flex items-center gap-1'>{e.name}</div>),
-          label: e.name,
-          start: firstRange.start,
-          end: lastRange.end,
-          uid: e.uuid,
-          contextMenuOptions: [
-            { id: 'view',
-              label: 'Ansehen',
-              icon: Calendar,
-              onClick: () => {handleRedirect('event', e.uid)}
+      entries.push({
+        type: e.cancelled ? 'cancelled' : 'event',
+        title: (<div className='inline-flex items-center gap-1'>{e.name}</div>),
+        label: e.name,
+        start: aggregatedStart.toISOString(),
+        end: aggregatedEnd.toISOString(),
+        uid: e.uid,
+        onSelect: () => { handleRedirect('event', e.uid) },
+        contextMenuOptions: [
+          {
+            id: 'view',
+            label: 'Ansehen',
+            icon: Calendar,
+            onSelect(payload) {
+              handleRedirect('event', e.uid)
             }
-          ]
+          }
+        ]
       })
-    }
     })
 
     // Appointments
@@ -200,7 +239,7 @@ function CalendarPage() {
       entries.push({
         type: 'appointment',
         title: (<div className='inline-flex items-center gap-1 truncate w-full'>{a.name} ({occurrenceStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</div>),
-        label: a.name,
+        label: `${a.name} um ${occurrenceStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
         start: occurrenceStart.toISOString(),
         end: new Date(occurrenceStart.getTime() + (new Date(a.date.end).getTime() - new Date(a.date.start).getTime())).toISOString(),
         uid: a.uid,
@@ -208,7 +247,9 @@ function CalendarPage() {
           { id: 'view',
             label: 'Ansehen', 
             icon: Calendar,
-            onClick: () => {handleRedirect('appointment', a.uid)}
+            onSelect(payload) {
+              handleRedirect('appointment', a.uid)
+            },          
           }
         ]
       })
@@ -249,7 +290,7 @@ function CalendarPage() {
 
   return (
     <ProtectedPage permission="accessCalendar" pageTitle="Kalender">
-      <div>
+      <div className='h-[calc(100vh-17.2rem)]'>
         <div className="flex items-center justify-between mb-4">
           <PageTitle title="Kalender" icon={Calendar} />
           <div className="flex items-center gap-2">
@@ -258,12 +299,12 @@ function CalendarPage() {
               <span className='!p-0'>Neu</span>
             </button>
           <Navbar items={[
-            { id: 'calendar', name: 'Kalender', onClick: () => setView('calendar'), icon: CalendarRange},
-            { id: 'list', name: 'Liste', onClick: () => setView('list'), icon: Table},
+            { id: 'calendar', name: 'Kalender', onClick: () => handleViewChange('calendar'), icon: CalendarRange},
+            { id: 'list', name: 'Liste', onClick: () => handleViewChange('list'), icon: Table},
           ]} activeItemId={view} />
           </div>
         </div>
-        {view === 'calendar' ? <CalendarComponent data={mapEntriesForDay} /> : <div>Liste</div>}
+        {view === 'calendar' ? <CalendarComponent data={mapEntriesForDay} month={currentMonth} onMonthChange={handleMonthChange} /> : <div>Liste</div>}
       </div>
 
       {

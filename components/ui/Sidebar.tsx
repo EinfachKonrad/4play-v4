@@ -18,7 +18,7 @@ type NavigationItem = {
     children?: NavigationItem[]
 }
 
-const navigationItems: NavigationItem[] = [
+export const navigationItems: NavigationItem[] = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Zeiterfassung', href: '/timeclock', icon: Timer, requiredPermission: 'accessTimeclock' },
     { name: 'Knowledge Base', href: '/knowledge', icon: BookOpenText, requiredPermission: 'accessKnowledgeBase' },
@@ -44,6 +44,42 @@ const navigationItems: NavigationItem[] = [
         ]}
     ] },
 ]
+
+function normalizePath(pathname: string) {
+    return pathname.split('?')[0].split('#')[0] || '/'
+}
+
+function findBestLabelMatch(pathname: string, items: NavigationItem[]): { href: string; name: string } | null {
+    let bestMatch: { href: string; name: string } | null = null
+
+    for (const item of items) {
+        if (item.href) {
+            const isExact = pathname === item.href
+            const isNested = pathname.startsWith(`${item.href}/`)
+
+            if (isExact || isNested) {
+                if (!bestMatch || item.href.length > bestMatch.href.length) {
+                    bestMatch = { href: item.href, name: item.name }
+                }
+            }
+        }
+
+        if (item.children?.length) {
+            const nestedMatch = findBestLabelMatch(pathname, item.children)
+            if (nestedMatch && (!bestMatch || nestedMatch.href.length > bestMatch.href.length)) {
+                bestMatch = nestedMatch
+            }
+        }
+    }
+
+    return bestMatch
+}
+
+export function getNavigationLabelForPath(pathname: string) {
+    const normalizedPath = normalizePath(pathname)
+    const match = findBestLabelMatch(normalizedPath, navigationItems)
+    return match?.name ?? null
+}
 
 function Item({ item, extendSidebar }: { item: NavigationItem; extendSidebar: boolean }) {
     const router = useRouter()
