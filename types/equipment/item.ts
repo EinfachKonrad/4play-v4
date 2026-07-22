@@ -1,5 +1,5 @@
 export default interface Item {
-    id: string; // item id (i-xxx)
+    id: string; // item id (uuidv4())
 
     manufacturer?: string;   // item manufacturer (e.g. "Yamaha", "Shure", "Avolites", etc.)
     model: string;  // item model (e.g. "CL5", "SM58", "Tiger Touch II", etc.)
@@ -21,17 +21,17 @@ export default interface Item {
     weight?: number;   // item weight in kilograms
 
     locations?: Array<{
-        id: string;   // location id (l-xxx)
+        id: string;   // location id
         quantity?: number;   // quantity of the item available at this location. If not set, it will be assumed that all available quantity of the item is at this location. This can be useful for items that are only stored in one location, so the quantity can be left empty to avoid confusion and make it clear that all available quantity is at that location.
     }>;
 
     versions?: {
         optional: boolean;   // if true, the item can be booked without selecting a specific version, otherwise one of the versions must be selected when booking the item
         options: Array<{  // different versions of the same item (e.g. a box corner with different half cone configurations) that may or may not need different prepping and packing instructions
-            id: string;   // version id (v-xxx)
+            id: string;   // version id
             name: string;   // version name (e.g. "Box Corner - T", "Box Corner - 90deg", etc.)
-            relations?: Array<{  // e.g. a box corner needs to be packed with 4 half cones, so the relations can be set to [{itemUuid: "i-xxx", quantity: 4}]
-                itemUuid: string;   // related item id (i-xxx)
+            relations?: Array<{  // e.g. a box corner needs to be packed with 4 half cones, so the relations can be set to [{itemUuid: "1234", quantity: 4}]
+                itemUuid: string;   // related item id
                 quantity: number;   // quantity of the related item needed for this version
             }>;
         }>;

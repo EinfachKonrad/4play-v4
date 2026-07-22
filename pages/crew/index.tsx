@@ -11,7 +11,6 @@ import React, { useEffect, useState } from 'react'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import licenses from '../api/crew/data/licenses'
-import LoadingText from '@/components/ui/LoadingText'
 import { useRouter } from 'next/router'
 
 function CrewPage() {

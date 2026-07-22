@@ -58,9 +58,7 @@ function buildFolderTree(items: Item[]): FolderNode {
 
     items.forEach(item => {
         const normalizedPath = normalizePath(item.path)
-        const folderPath = item.path.trim().endsWith('/')
-            ? normalizedPath
-            : getParentFolderPath(normalizedPath)
+        const folderPath = normalizedPath
 
         const segments = folderPath === '/' ? [] : folderPath.split('/').filter(Boolean)
         let current = root

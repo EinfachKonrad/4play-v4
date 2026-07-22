@@ -1,5 +1,7 @@
 import Button from '@/components/ui/Button'
+import ContextMenu, { ContextMenuState } from '@/components/ui/ContextMenu'
 import Input from '@/components/ui/Input'
+import MessageBox from '@/components/ui/MessageBox'
 import Navbar from '@/components/ui/Navbar'
 import PageTitle from '@/components/utility/PageTitle'
 import ProtectedPage from '@/components/utility/ProtectedPage'
@@ -19,6 +21,8 @@ function EventIndexPage() {
     const [selectedProject, setSelectedProject] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const [savedEventData, setSavedEventData] = useState<Event>();
+    const [projectContextMenu, setProjectContextMenu] = useState<ContextMenuState<string> | null>(null)
+    const [projectToDelete, setProjectToDelete] = useState<string | null>(null)
 
     const formatDateForDisplay = (value: string) => {
         const date = new Date(value)
@@ -40,6 +44,13 @@ function EventIndexPage() {
         const day = String(date.getDate()).padStart(2, '0')
         return `${year}-${month}-${day}`
     }
+
+    const escapeHtml = (value: string) => value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
 
     useEffect(() => {
         setView((router.query.view as typeof view) || 'index')
@@ -108,6 +119,48 @@ function EventIndexPage() {
             query: { ...router.query, project: projectUid, view: tab }
         }, undefined, { shallow: true })
      }
+
+    const handleDeleteProject = (projectUid: string) => {
+        if (!eventData) return
+
+        setEventData((current) => {
+            if (!current) return current
+
+            return {
+                ...current,
+                projects: current.projects.filter((currentProject) => currentProject.uid !== projectUid),
+            }
+        })
+
+        if (selectedProject === projectUid) {
+            setSelectedProject(null)
+            setView('index')
+
+            const nextQuery = { ...router.query }
+            delete nextQuery.project
+            delete nextQuery.view
+
+            router.push({
+                pathname: router.pathname,
+                query: nextQuery,
+            }, undefined, { shallow: true })
+        }
+    }
+
+    const openDeleteProjectDialog = (projectUid: string) => {
+        setProjectToDelete(projectUid)
+    }
+
+    const closeDeleteProjectDialog = () => {
+        setProjectToDelete(null)
+    }
+
+    const confirmDeleteProject = () => {
+        if (!projectToDelete) return
+
+        handleDeleteProject(projectToDelete)
+        closeDeleteProjectDialog()
+    }
 
     useEffect(() => {
         if (!router.isReady || !eventUid) {
@@ -269,7 +322,30 @@ function EventIndexPage() {
                         <h2 className="text-lg font-semibold mb-2">Projekte</h2>
                         <div className="mx-2 h-full overflow-y-auto divide-y">
                             {eventData?.projects.map((project) => (
-                                <div onClick={() => handleSelectProject(project.uid)} key={project.uid} className="py-2 cursor-pointer hover:underline transition-colors">
+                                <div
+                                    key={project.uid}
+                                    className="py-2 cursor-pointer hover:underline transition-colors"
+                                    onClick={() => handleSelectProject(project.uid)}
+                                    onContextMenu={(event) => {
+                                        event.preventDefault()
+                                        event.stopPropagation()
+
+                                        setProjectContextMenu({
+                                            x: event.clientX,
+                                            y: event.clientY,
+                                            payload: project.uid,
+                                            items: [
+                                                {
+                                                    id: 'delete-project',
+                                                    label: 'Projekt löschen',
+                                                    icon: Trash2,
+                                                    danger: true,
+                                                    onSelect: openDeleteProjectDialog,
+                                                },
+                                            ],
+                                        })
+                                    }}
+                                >
                                     <h3 className="text-md font-medium">{project.name}</h3>
                                     {project.dates.map((date, index) => (
                                         <div key={index} className="text-sm text-gray-600">
@@ -316,6 +392,32 @@ function EventIndexPage() {
                         }}>
                             Neu
                         </div>
+                        <ContextMenu menu={projectContextMenu} onClose={() => setProjectContextMenu(null)} />
+                        {projectToDelete && eventData ? (
+                            (() => {
+                                const projectName = eventData.projects.find((project) => project.uid === projectToDelete)?.name ?? 'Unbekannt'
+
+                                return (
+                            <MessageBox
+                                title="Projekt löschen"
+                                description={`Möchtest du das Projekt <strong>${escapeHtml(projectName)}</strong> wirklich löschen?`}
+                                icon={Trash2}
+                                options={[
+                                    {
+                                        label: 'Abbrechen',
+                                        type: 'primary',
+                                        onClick: closeDeleteProjectDialog,
+                                    },
+                                    {
+                                        label: 'Löschen',
+                                        type: 'danger',
+                                        onClick: confirmDeleteProject,
+                                    },
+                                ]}
+                            />
+                                )
+                            })()
+                        ) : null}
                     </div>
                     <div className="w-full">
                         {!selectedProject && (<div className="h-full flex items-center justify-center"><h2 className='select-none'>Wähle ein Projekt aus, um die Details anzuzeigen</h2></div>)}

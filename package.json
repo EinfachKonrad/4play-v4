@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "import:wawi-items": "node scripts/import-wawi-items.mjs",
+    "import:wawi-bundles": "node scripts/import-wawi-bundles.mjs",
     "postinstall": "node scripts/fix-next-auth-next16.mjs"
   },
   "dependencies": {

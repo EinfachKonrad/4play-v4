@@ -53,6 +53,55 @@ function transformStringsDeep(value: unknown, transform: (input: string) => stri
     return value
 }
 
+function encryptSmallBusinessValue(value: unknown): unknown {
+    if (typeof value === 'boolean') {
+        return encryptIfPlain(String(value))
+    }
+
+    if (typeof value === 'string') {
+        return encryptIfPlain(value)
+    }
+
+    return value
+}
+
+function transformSmallBusinessDeep(value: unknown, transform: (input: unknown) => unknown): unknown {
+    if (Array.isArray(value)) {
+        return value.map((entry) => transformSmallBusinessDeep(entry, transform))
+    }
+
+    if (value && typeof value === 'object') {
+        if (value instanceof Date) {
+            return value
+        }
+
+        const transformed: Record<string, unknown> = {}
+        for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+            if (key === 'smallBusiness') {
+                transformed[key] = transform(entry)
+                continue
+            }
+
+            transformed[key] = transformSmallBusinessDeep(entry, transform)
+        }
+        return transformed
+    }
+
+    return value
+}
+
+function parseSmallBusinessValue(value: unknown): unknown {
+    if (value === 'true') {
+        return true
+    }
+
+    if (value === 'false') {
+        return false
+    }
+
+    return value
+}
+
 function buildUidQuery(uid: string) {
     return { uid: { $in: [uid, encryptIfPlain(uid)] } }
 }
@@ -61,7 +110,8 @@ function buildResponseBranding(
     branding: Record<string, unknown>,
     options?: { includeIntegrations?: boolean; includeLexwareIntegration?: boolean }
 ): Record<string, unknown> {
-    const response = transformStringsDeep({ ...branding }, (value) => String(decryptData(value))) as Record<string, unknown>
+    const decryptedBranding = transformStringsDeep({ ...branding }, (value) => String(decryptData(value)))
+    const response = transformSmallBusinessDeep(decryptedBranding, parseSmallBusinessValue) as Record<string, unknown>
     delete response._id
 
     if (options?.includeIntegrations === false) {
@@ -146,7 +196,10 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
             ],
         }
 
-        const encryptedBranding = transformStringsDeep(newBranding, encryptIfPlain) as BrandingDocument
+        const encryptedBranding = transformSmallBusinessDeep(
+            transformStringsDeep(newBranding, encryptIfPlain),
+            encryptSmallBusinessValue
+        ) as BrandingDocument
         await collection.insertOne(encryptedBranding)
         return res
             .status(201)
@@ -164,7 +217,10 @@ async function handler(req: ApiRequest, res: NextApiResponse) {
         delete updates.uid
         delete updates.history
 
-        const encryptedUpdates = transformStringsDeep(updates, encryptIfPlain) as Record<string, unknown>
+        const encryptedUpdates = transformSmallBusinessDeep(
+            transformStringsDeep(updates, encryptIfPlain),
+            encryptSmallBusinessValue
+        ) as Record<string, unknown>
         const encryptedHistoryEntry = transformStringsDeep(
             {
                 date: new Date(),

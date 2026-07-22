@@ -26,7 +26,7 @@ export default interface RentalItem {
             options: Array<{  // different versions of the same item (e.g. a box corner with different half cone configurations) that may or may not need different prepping and packing instructions
                 id: string;   // version id
                 name: string;   // version name (e.g. "Box Corner - T", "Box Corner - 90deg", etc.)
-                relations?: Array<{  // e.g. a box corner needs to be packed with 4 half cones, so the relations can be set to [{itemUuid: "i-xxx", quantity: 4}]
+                relations?: Array<{  // e.g. a box corner needs to be packed with 4 half cones, so the relations can be set to [{itemUuid: "123", quantity: 4}]
                     itemUuid: string;   // related item id
                     quantity: number;   // quantity of the related item needed for this version
                 }>;
