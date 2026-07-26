@@ -5,10 +5,12 @@ import Modal from '../ui/Modal'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import Dropdown from '../ui/Dropdown'
+import PathPicker from '../ui/PathPicker'
 import Item from '@/types/equipment/item'
 
 interface CreateItemModalProps {
   onClose: () => void
+  preloadData?: Partial<Item> | null
 }
 
 type ItemFormData = {
@@ -42,10 +44,8 @@ function parseOptionalNumber(value: string): number | undefined {
   return parsed
 }
 
-export default function CreateItemModal({ onClose }: CreateItemModalProps) {
-  const [currentStep, setCurrentStep] = useState(1)
-  const [saving, setSaving] = useState(false)
-  const [entryData, setEntryData] = useState<ItemFormData>({
+function getDefaultEntryData(): ItemFormData {
+  return {
     manufacturer: '',
     model: '',
     path: '',
@@ -61,7 +61,54 @@ export default function CreateItemModal({ onClose }: CreateItemModalProps) {
     locations: [{ id: '', quantity: '' }],
     versionOptional: true,
     versions: [],
-  })
+  }
+}
+
+function getEntryDataFromPreload(preloadData?: Partial<Item> | null): ItemFormData {
+  const defaults = getDefaultEntryData()
+  if (!preloadData) {
+    return defaults
+  }
+
+  const locations = preloadData.locations?.length
+    ? preloadData.locations.map((location) => ({
+        id: location.id ?? '',
+        quantity: typeof location.quantity === 'number' ? String(location.quantity) : '',
+      }))
+    : defaults.locations
+
+  const versions = preloadData.versions?.options?.length
+    ? preloadData.versions.options.map((version) => ({
+        id: uuidv4(),
+        name: version.name ?? '',
+      }))
+    : defaults.versions
+
+  return {
+    ...defaults,
+    manufacturer: preloadData.manufacturer ?? '',
+    model: preloadData.model ?? '',
+    path: preloadData.path ?? '',
+    description: preloadData.description ?? '',
+    purchasePrice: preloadData.purchasePrice ?? defaults.purchasePrice,
+    dayRate: preloadData.dayRate ?? defaults.dayRate,
+    width: preloadData.dimensions?.width !== undefined ? String(preloadData.dimensions.width) : '',
+    height: preloadData.dimensions?.height !== undefined ? String(preloadData.dimensions.height) : '',
+    depth: preloadData.dimensions?.depth !== undefined ? String(preloadData.dimensions.depth) : '',
+    weight: preloadData.weight !== undefined ? String(preloadData.weight) : '',
+    trackingType: preloadData.stock?.trackingType ?? defaults.trackingType,
+    // For duplicate flow we intentionally do not preload stock quantities.
+    totalQuantity: defaults.totalQuantity,
+    locations,
+    versionOptional: preloadData.versions?.optional ?? defaults.versionOptional,
+    versions,
+  }
+}
+
+export default function CreateItemModal({ onClose, preloadData }: CreateItemModalProps) {
+  const [currentStep, setCurrentStep] = useState(1)
+  const [saving, setSaving] = useState(false)
+  const [entryData, setEntryData] = useState<ItemFormData>(() => getEntryDataFromPreload(preloadData))
 
   const displayPreviousButton = currentStep > 1
 
@@ -235,10 +282,9 @@ export default function CreateItemModal({ onClose }: CreateItemModalProps) {
 
             <div>
               <label className='text-sm text-gray-400'>Pfad</label>
-              <Input
+              <PathPicker
                 value={entryData.path}
-                onChange={(e) => setEntryData({ ...entryData, path: e.target.value })}
-                placeholder='Audio/Consoles/Digital'
+                onChange={(path) => setEntryData({ ...entryData, path })}
               />
             </div>
 

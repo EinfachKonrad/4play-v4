@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import Modal from '../ui/Modal'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
+import PathPicker from '../ui/PathPicker'
 import RentalItem from '@/types/equipment/rentalItem'
 
 interface CreateRentalItemModalProps {
@@ -235,10 +236,9 @@ export default function CreateRentalItemModal({ onClose }: CreateRentalItemModal
 
             <div>
               <label className='text-sm text-gray-400'>Pfad</label>
-              <Input
+              <PathPicker
                 value={entryData.path}
-                onChange={(e) => setEntryData({ ...entryData, path: e.target.value })}
-                placeholder='Audio/Mikrofone/Vocal'
+                onChange={(path) => setEntryData({ ...entryData, path })}
               />
             </div>
 

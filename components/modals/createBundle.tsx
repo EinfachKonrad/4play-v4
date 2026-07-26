@@ -5,6 +5,7 @@ import Modal from '../ui/Modal'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import Dropdown from '../ui/Dropdown'
+import PathPicker from '../ui/PathPicker'
 import Bundle from '@/types/equipment/bundle'
 
 interface CreateBundleModalProps {
@@ -208,10 +209,9 @@ export default function CreateBundleModal({ onClose }: CreateBundleModalProps) {
 
             <div>
               <label className='text-sm text-gray-400'>Pfad</label>
-              <Input
+              <PathPicker
                 value={entryData.path}
-                onChange={(e) => setEntryData({ ...entryData, path: e.target.value })}
-                placeholder='Audio/Bundles'
+                onChange={(path) => setEntryData({ ...entryData, path })}
               />
             </div>
 

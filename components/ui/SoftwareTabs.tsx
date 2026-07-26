@@ -34,7 +34,7 @@ export default function SoftwareTabs({
   const closableTabsCount = tabs.filter((tab) => tab.closable).length;
 
   return (
-    <div className="hidden border-b border-gray-800 md:block">
+    <div className="hidden border-b border-gray-800 md:block sticky top-0 z-10 bg-neutral-950/80 backdrop-blur">
       <ul className="flex min-w-full items-end gap-1 overflow-x-auto px-4 pt-4">
         {tabs.map((tab) => {
           const isActive = tab.key === activeTabKey;
